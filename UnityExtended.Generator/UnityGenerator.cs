@@ -73,13 +73,8 @@ public readonly record struct InputAsset {
 public class UnityGenerator : IIncrementalGenerator {
     public void Initialize(IncrementalGeneratorInitializationContext context) {
         context.RegisterPostInitializationOutput(ctx => {
-            ctx.AddSource($"{nameof(GeneratorHelper.GetComponentAttribute)}.g.cs",
-                SourceText.From(GeneratorHelper.GetComponentAttribute, Encoding.UTF8));
-        });
-        
-        context.RegisterPostInitializationOutput(ctx => {
-            ctx.AddSource($"{nameof(GeneratorHelper.HandleInputAttribute)}.g.cs",
-                SourceText.From(GeneratorHelper.HandleInputAttribute, Encoding.UTF8));
+            ctx.AddSource($"{nameof(GeneratorHelper.Attributes)}.g.cs",
+                SourceText.From(GeneratorHelper.Attributes, Encoding.UTF8));
         });
 
         var variableProvider = context.SyntaxProvider.ForAttributeWithMetadataName(

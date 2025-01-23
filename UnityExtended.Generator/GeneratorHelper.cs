@@ -1,22 +1,20 @@
 ﻿namespace UnityExtended.Generator;
 
 public static class GeneratorHelper {
-    public const string GetComponentAttribute = @"
+    public const string Attributes = @"
+using System;
+
 namespace UnityExtended.Generator.Attributes {
-    [System.AttributeUsage(System.AttributeTargets.Field)]
-    public class GetComponentAttribute : System.Attribute {
+    [AttributeUsage(AttributeTargets.Field)]
+    public class GetComponentAttribute : Attribute {
 
     }
-}
-";
 
-    public const string HandleInputAttribute = @"
-namespace UnityExtended.Generator.Attributes {
-    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true)]
-    public class HandleInputAttribute : System.Attribute {
-        public System.Type InputActionsType;
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+    public class HandleInputAttribute : Attribute {
+        public Type InputActionsType;
 
-        public HandleInputAttribute(System.Type inputActionsType) {
+        public HandleInputAttribute(Type inputActionsType) {
             InputActionsType = inputActionsType;
         }
     }
