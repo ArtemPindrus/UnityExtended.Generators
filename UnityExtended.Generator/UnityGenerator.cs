@@ -115,7 +115,11 @@ public class UnityGenerator : IIncrementalGenerator {
         foreach (var attributeData in context.Attributes) {
             var syntaxReference = attributeData.ApplicationSyntaxReference;
 
+            if (syntaxReference is null) continue;
+
             var attributeSyntax = (AttributeSyntax)syntaxReference.GetSyntax();
+            
+            if (attributeSyntax.ArgumentList is null) continue;
 
             var attributeArgumentSyntax = attributeSyntax.ArgumentList.Arguments[0];
 
@@ -135,6 +139,9 @@ public class UnityGenerator : IIncrementalGenerator {
             if (member is MethodDeclarationSyntax methodDeclarationSyntax &&
                 methodDeclarationSyntax.Modifiers.Any(SyntaxKind.PartialKeyword)) {
                 var methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclarationSyntax);
+                
+                if (methodSymbol is null) continue;
+                
                 partialMethods.Add(methodSymbol.Name);
             }
         }
@@ -156,6 +163,9 @@ public class UnityGenerator : IIncrementalGenerator {
             if (memberDeclarationSyntax is not StructDeclarationSyntax structDeclarationSyntax) continue;
 
             var structSymbol = context.SemanticModel.GetDeclaredSymbol(structDeclarationSyntax);
+            
+            if (structSymbol is null) continue;
+            
             var structName = structSymbol.Name;
             
             if (!structName.EndsWith("Actions")) continue;
@@ -164,6 +174,9 @@ public class UnityGenerator : IIncrementalGenerator {
 
             foreach (var property in structDeclarationSyntax.Members.GetEveryPropertyOfType(context.SemanticModel, "UnityEngine.InputSystem.InputAction")) {
                 var propertySymbol = context.SemanticModel.GetDeclaredSymbol(property);
+                
+                if (propertySymbol is null) continue;
+                
                 var propertyName = propertySymbol.Name;
                 
                 actionNames.Add(propertyName);
@@ -175,6 +188,9 @@ public class UnityGenerator : IIncrementalGenerator {
 
         if (inputActionsInfos.Count > 0) {
             var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclarationSyntax);
+
+            if (classSymbol is null) return null;
+            
             var className = classSymbol.ToDisplayString();
 
             return new InputAsset(className, inputActionsInfos.ToArray());
