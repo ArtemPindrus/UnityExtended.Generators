@@ -208,45 +208,9 @@ public class UnityGenerator : IIncrementalGenerator {
 
         foreach (var classToGenerate in classesToGenerate) {
             var validHandleInputDatas = handleInputDatas.Where(x => x.FullyQualifiedClassName == classToGenerate).ToArray();
-            
-            List<string> partialMethodsToBuild = new();
-            List<string> inputSubscriptions = new();
-            
-            foreach (var handleInput in validHandleInputDatas) {
-                foreach (string inputMapType in handleInput.ActionMapTypes) {
-                    (string inputMapAssetName, string actionMapName) = inputMapType.SeparateFromFullyQualifiedName();
-                    InputAsset? inputAsset = inputAssets.FirstOrDefault(x => x.FullyQualifiedClassName == inputMapAssetName);
-                    
-                    if (inputAsset is not InputAsset validAsset) continue;
 
-                    ActionMap? actionMap = validAsset.ActionMaps.FirstOrDefault(x => x.MapName == actionMapName);
-                    
-                    if (actionMap is not ActionMap validMap) continue;
-
-                    foreach (var actionName in validMap.Actions) {
-                        string performedSignature =
-                            $"partial void On{validMap.MapName}_{actionName}Performed(UnityEngine.InputSystem.InputAction.CallbackContext context);";
-
-                        string canceledSignature =
-                            $"partial void On{validMap.MapName}_{actionName}Canceled(UnityEngine.InputSystem.InputAction.CallbackContext context);";
-
-                        string startedSignature =
-                            $"partial void On{validMap.MapName}_{actionName}Started(UnityEngine.InputSystem.InputAction.CallbackContext context);";
-                        
-                        partialMethodsToBuild.Add(performedSignature);
-                        partialMethodsToBuild.Add(canceledSignature);
-                        partialMethodsToBuild.Add(startedSignature);
-
-                        string performedName = $"On{validMap.MapName}_{actionName}Performed";
-                        string canceledName = $"On{validMap.MapName}_{actionName}Canceled";
-                        string startedName = $"On{validMap.MapName}_{actionName}Started";
-
-                        if (handleInput.PartialMethodNames.Contains(performedName)) inputSubscriptions.Add($"{validMap.MapName}.{actionName}.performed += {performedName};");
-                        if (handleInput.PartialMethodNames.Contains(canceledName)) inputSubscriptions.Add($"{validMap.MapName}.{actionName}.canceled += {canceledName};");
-                        if (handleInput.PartialMethodNames.Contains(startedName)) inputSubscriptions.Add($"{validMap.MapName}.{actionName}.started += {startedName};");
-                    }
-                }
-            }
+            GetRequiredDataForHandleInput(handleInputDatas, inputAssets,
+                out List<string> partialMethodsToBuild, out List<string> inputSubscriptions);
             
             IndentedStringBuilder stringBuilder = new();
 
@@ -320,6 +284,52 @@ public class UnityGenerator : IIncrementalGenerator {
             if (containingNamespace != null) stringBuilder.DecrementIndent().AppendLine("}"); // close namespace
             
             context.AddSource($"{containingClass}.g.cs", stringBuilder.ToString());
+        }
+    }
+
+    private static void GetRequiredDataForHandleInput(ImmutableArray<HandleInputData> attributesData, ImmutableArray<InputAsset> inputAssets,
+        out List<string> partialMethodsToBuild, out List<string> inputSubscriptions) {
+        partialMethodsToBuild = new();
+        inputSubscriptions = new();
+
+        foreach (var handleInput in attributesData) {
+            foreach (string inputMapType in handleInput.ActionMapTypes) {
+                (string inputMapAssetName, string actionMapName) = inputMapType.SeparateFromFullyQualifiedName();
+                InputAsset? inputAsset =
+                    inputAssets.FirstOrDefault(x => x.FullyQualifiedClassName == inputMapAssetName);
+
+                if (inputAsset is not { } validAsset) continue;
+
+                ActionMap? actionMap = validAsset.ActionMaps.FirstOrDefault(x => x.MapName == actionMapName);
+
+                if (actionMap is not { } validMap) continue;
+
+                foreach (var actionName in validMap.Actions) {
+                    string performedSignature =
+                        $"partial void On{validMap.MapName}_{actionName}Performed(UnityEngine.InputSystem.InputAction.CallbackContext context);";
+
+                    string canceledSignature =
+                        $"partial void On{validMap.MapName}_{actionName}Canceled(UnityEngine.InputSystem.InputAction.CallbackContext context);";
+
+                    string startedSignature =
+                        $"partial void On{validMap.MapName}_{actionName}Started(UnityEngine.InputSystem.InputAction.CallbackContext context);";
+
+                    partialMethodsToBuild.Add(performedSignature);
+                    partialMethodsToBuild.Add(canceledSignature);
+                    partialMethodsToBuild.Add(startedSignature);
+
+                    string performedName = $"On{validMap.MapName}_{actionName}Performed";
+                    string canceledName = $"On{validMap.MapName}_{actionName}Canceled";
+                    string startedName = $"On{validMap.MapName}_{actionName}Started";
+
+                    if (handleInput.PartialMethodNames.Contains(performedName))
+                        inputSubscriptions.Add($"{validMap.MapName}.{actionName}.performed += {performedName};");
+                    if (handleInput.PartialMethodNames.Contains(canceledName))
+                        inputSubscriptions.Add($"{validMap.MapName}.{actionName}.canceled += {canceledName};");
+                    if (handleInput.PartialMethodNames.Contains(startedName))
+                        inputSubscriptions.Add($"{validMap.MapName}.{actionName}.started += {startedName};");
+                }
+            }
         }
     }
 
