@@ -275,8 +275,12 @@ public class UnityGenerator : IIncrementalGenerator {
                 stringBuilder.AppendLine(inputSubscription);
             }
 
+            stringBuilder.AppendLine("OnEnable2();");
+
             stringBuilder.DecrementIndent().AppendLine("}").AppendLine();
             // close OnEnable
+
+            stringBuilder.AppendLine("partial void OnEnable2();").AppendLine();
             
             // OnDisable
             stringBuilder.AppendLine("private void OnDisable() {").IncrementIndent();
@@ -284,9 +288,13 @@ public class UnityGenerator : IIncrementalGenerator {
             foreach (var inputSubscription in inputSubscriptions) {
                 stringBuilder.AppendLine(inputSubscription.Replace('+', '-'));
             }
+            
+            stringBuilder.AppendLine("OnDisable2();").AppendLine();
 
             stringBuilder.DecrementIndent().AppendLine("}").AppendLine();
             // close OnDisable
+            
+            stringBuilder.AppendLine("partial void OnDisable2();");
             
             foreach (var method in partialMethodsToBuild) {
                 stringBuilder.AppendLine(method);
