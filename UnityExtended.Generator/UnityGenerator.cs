@@ -238,8 +238,11 @@ public class UnityGenerator : IIncrementalGenerator {
             
             //// field init
             foreach (var handleInput in validHandleInputDatas) {
-                foreach (var actionMapName in handleInput.ActionMapTypes) {
-                    stringBuilder.AppendLine($"{actionMapName.ExtractConcreteClassName()} = UnityExtended.Core.Types.InputSingletonsManager.GetInstance<{actionMapName}>();");
+                foreach (var fullyQualifiedActionMapTypeName in handleInput.ActionMapTypes) {
+                    (string inputAssetName, string actionMapName) =
+                        fullyQualifiedActionMapTypeName.SeparateFromFullyQualifiedName();
+                    
+                    stringBuilder.AppendLine($"{actionMapName} = UnityExtended.Core.Types.InputSingletonsManager.GetInstance<{inputAssetName}>().{actionMapName.Replace("Actions", "")};");
                 }
             }
 
