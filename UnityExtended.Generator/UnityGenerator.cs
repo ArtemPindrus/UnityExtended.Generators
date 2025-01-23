@@ -307,8 +307,15 @@ public class UnityGenerator : IIncrementalGenerator {
         foreach (var handleInput in attributesData) {
             foreach (string inputMapType in handleInput.ActionMapTypes) {
                 (string inputMapAssetName, string actionMapName) = inputMapType.SeparateFromFullyQualifiedName();
-                InputAsset? inputAsset =
-                    inputAssets.FirstOrDefault(x => x.FullyQualifiedClassName == inputMapAssetName);
+                InputAsset? inputAsset;
+
+                try {
+                    inputAsset = inputAssets.FirstOrDefault(x => x.FullyQualifiedClassName == inputMapAssetName);
+                }
+                catch (Exception e) {
+                    // log error (into file?)
+                    continue;
+                }
 
                 if (inputAsset is not { } validAsset) continue;
 
