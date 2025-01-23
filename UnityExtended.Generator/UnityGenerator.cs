@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
@@ -205,7 +206,7 @@ public class UnityGenerator : IIncrementalGenerator {
     private static void Execute(SourceProductionContext context, ((ImmutableArray<Variable> variables, ImmutableArray<InputAsset> inputInfos) tuple, ImmutableArray<HandleInputData> handleInputDatas) providerTuple) {
         (ImmutableArray<Variable> variables, ImmutableArray<InputAsset> inputAssets) = providerTuple.tuple;
         ImmutableArray<HandleInputData> handleInputDatas = providerTuple.handleInputDatas;
-
+        
         // find all necessary classes as fully qualified name
         HashSet<string> classesToGenerate = new();
         foreach (var variable in variables) {
