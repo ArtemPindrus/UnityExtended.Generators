@@ -287,7 +287,6 @@ public class UnityGenerator : IIncrementalGenerator {
             stringBuilder.DecrementIndent().AppendLine("}").AppendLine();
             // close OnDisable
             
-            // TODO: build methods for inputs to match
             foreach (var method in partialMethodsToBuild) {
                 stringBuilder.AppendLine(method);
             }
