@@ -1,0 +1,11 @@
+C:\Users\Artem\Documents\C#\UnityExtended.Generator\UnityExtended.Generator\bin\Release\netstandard2.0\UnityExtended.Generator.deps.json
+C:\Users\Artem\Documents\C#\UnityExtended.Generator\UnityExtended.Generator\bin\Release\netstandard2.0\UnityExtended.Generator.dll
+C:\Users\Artem\Documents\C#\UnityExtended.Generator\UnityExtended.Generator\bin\Release\netstandard2.0\UnityExtended.Generator.pdb
+C:\Users\Artem\Documents\C#\UnityExtended.Generator\UnityExtended.Generator\obj\Release\netstandard2.0\UnityExtended.Generator.csproj.AssemblyReference.cache
+C:\Users\Artem\Documents\C#\UnityExtended.Generator\UnityExtended.Generator\obj\Release\netstandard2.0\UnityExtended.Generator.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Artem\Documents\C#\UnityExtended.Generator\UnityExtended.Generator\obj\Release\netstandard2.0\UnityExtended.Generator.AssemblyInfoInputs.cache
+C:\Users\Artem\Documents\C#\UnityExtended.Generator\UnityExtended.Generator\obj\Release\netstandard2.0\UnityExtended.Generator.AssemblyInfo.cs
+C:\Users\Artem\Documents\C#\UnityExtended.Generator\UnityExtended.Generator\obj\Release\netstandard2.0\UnityExtended.Generator.csproj.CoreCompileInputs.cache
+C:\Users\Artem\Documents\C#\UnityExtended.Generator\UnityExtended.Generator\obj\Release\netstandard2.0\UnityExtended.Generator.sourcelink.json
+C:\Users\Artem\Documents\C#\UnityExtended.Generator\UnityExtended.Generator\obj\Release\netstandard2.0\UnityExtended.Generator.dll
+C:\Users\Artem\Documents\C#\UnityExtended.Generator\UnityExtended.Generator\obj\Release\netstandard2.0\UnityExtended.Generator.pdb
