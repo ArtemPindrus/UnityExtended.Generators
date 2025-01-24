@@ -362,37 +362,27 @@ public class UnityGenerator : IIncrementalGenerator {
 
     private static void AddSecondMethodsIfNecessary(IEnumerable<Class> classesToGenerate) {
         foreach (var classToGenerate in classesToGenerate) {
-            Method awakeMethod =
-                classToGenerate.Methods.FirstOrDefault(x => x.MethodSignature == GeneratorHelper.AwakeMethodSignature);
+            Add(classToGenerate, GeneratorHelper.AwakeMethodSignature, GeneratorHelper.Awake2MethodSignature);
+            
+            Add(classToGenerate, GeneratorHelper.OnEnableMethodSignature, GeneratorHelper.OnEnable2MethodSignature);
+            
+            Add(classToGenerate, GeneratorHelper.OnDisableMethodSignature, GeneratorHelper.OnDisable2MethodSignature);
+            
+            Add(classToGenerate, GeneratorHelper.OnValidateMethodSignature, GeneratorHelper.OnValidate2MethodSignature);
+        }
 
-            if (awakeMethod != default) {
-                var awake2Method = new Method(GeneratorHelper.Awake2MethodSignature,
+        static void Add(Class classToGenerate, string existingSignature, string generatedSignature) {
+            Method existingMethod =
+                classToGenerate.Methods.FirstOrDefault(x => x.MethodSignature == existingSignature);
+            
+            if (existingMethod != default) {
+                var generateMethod = new Method(generatedSignature,
                     classToGenerate.FullyQualifiedClassName);
-                classToGenerate.TryAddMethod(awake2Method);
+                classToGenerate.TryAddMethod(generateMethod);
 
-                awakeMethod.TryAddStatement(new StatementDeclaration("Awake2();", awakeMethod));
-            }
-            
-            Method onEnableMethod =
-                classToGenerate.Methods.FirstOrDefault(x => x.MethodSignature == GeneratorHelper.OnEnableMethodSignature);
-            
-            if (onEnableMethod != default) {
-                var onEnable2Method = new Method(GeneratorHelper.OnEnable2MethodSignature,
-                    classToGenerate.FullyQualifiedClassName);
-                classToGenerate.TryAddMethod(onEnable2Method);
+                var calling = generatedSignature.Substring(generatedSignature.LastIndexOf(' ') + 1) + ";";
 
-                onEnableMethod.TryAddStatement(new StatementDeclaration("OnEnable2();", onEnableMethod));
-            }
-            
-            Method onDisableMethod =
-                classToGenerate.Methods.FirstOrDefault(x => x.MethodSignature == GeneratorHelper.OnDisableMethodSignature);
-            
-            if (onDisableMethod != default) {
-                var onDisable2Method = new Method(GeneratorHelper.OnDisable2MethodSignature,
-                    classToGenerate.FullyQualifiedClassName);
-                classToGenerate.TryAddMethod(onDisable2Method);
-
-                onDisableMethod.TryAddStatement(new StatementDeclaration("OnEnable2();", onDisableMethod));
+                existingMethod.TryAddStatement(new StatementDeclaration(calling, existingMethod));
             }
         }
     }
