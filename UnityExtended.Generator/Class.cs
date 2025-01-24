@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
 
 namespace UnityExtended.Generator;
 
@@ -18,6 +19,11 @@ public record struct Class {
         FullyQualifiedClassName = fullyQualifiedClassName;
         NamespaceName = namespaceName;
         ClassName = className;
+    }
+
+    public Class(ITypeSymbol classSymbol) {
+        FullyQualifiedClassName = classSymbol.ToDisplayString();
+        (NamespaceName, ClassName) = FullyQualifiedClassName.SeparateFromFullyQualifiedName();
     }
 
     public bool TryAddMethod(Method method) {
