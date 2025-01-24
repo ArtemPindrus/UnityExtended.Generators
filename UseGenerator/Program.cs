@@ -9,55 +9,12 @@ using UnityEngine.InputSystem;
 
 
 internal class Program {
-    public static void Main(string[] args) {
-        var syntaxTree = CSharpSyntaxTree.ParseText(@"
-using UnityExtended.Generator.Attributes;
-using UnityEngine;
-using UnityEngine.InputSystem;
-
-namespace UnityEngine {
-    public class MonoBehavior {
-        protected T GetComponent<T>() => default;
-    }
-}
-
-namespace UnityEngine.InputSystem {
-    public class InputAction {
+    public static void Main() {
+        string mocking = File.ReadAllText(@"C:\Users\Artem\Documents\C#\UnityExtended.Generator\UseGenerator\Mocking\MockingUnity.cs");
+        string source = File.ReadAllText(@"C:\Users\Artem\Documents\C#\UnityExtended.Generator\UseGenerator\Source.cs");
+        string sourceText = source + "\n" + mocking;
         
-    } 
-    
-    public partial class MyInput : IInputActionCollection2 {
-        public struct InteractionActions {
-            public InputAction attack => new();
-            public InputAction interact => new();
-        }
-    }
-
-    public partial class DragAndDropInput : IInputActionCollection2 {
-        public struct DragAndDropActions {
-            public InputAction Drag => new();
-            public InputAction Drop => new();
-        }
-    }
-    
-    public interface IInputActionCollection2 {}
-}
-
-namespace MyNamespace {
-    [HandleInput(typeof(MyInput.InteractionActions), nameof(MyInput.Interaction.attack))]
-    public partial class Something : MonoBehavior {
-        [GetComponent] private MonoBehavior mono, some, field, another;
-
-        [GetComponent] private object obj;
-
-        partial void PartialImplemented(){
-            Console.WriteLine(""hey"");
-        };
-
-        partial void PartialNotImpl();
-    }
-}
-");
+        var syntaxTree = CSharpSyntaxTree.ParseText(sourceText);
         var compilation = CSharpCompilation.Create("UseGenerator", new []{ syntaxTree });
 
         var generator = new UnityGenerator();
@@ -67,52 +24,5 @@ namespace MyNamespace {
     }
 }
 
-namespace UnityEngine {
-    public class MonoBehavior {
-        protected T GetComponent<T>() => default;
-    }
-}
 
-namespace UnityEngine.InputSystem {
-    public class InputAction {
-        public event Action<CallbackContext> performed;
-        public event Action<CallbackContext> canceled;
-        public event Action<CallbackContext> started; 
-        
-        public struct CallbackContext{}
-    } 
-    
-    public partial class MyInput : IInputActionCollection2 {
-        public InteractionActions Interaction;
-        
-        public struct InteractionActions {
-            public InputAction attack => new();
-            public InputAction interact => new();
-        }
-    }
 
-    public partial class DragAndDropInput : IInputActionCollection2 {
-        public DragAndDropActions DragAndDrop;
-        
-        public struct DragAndDropActions {
-            public InputAction Drag => new();
-            public InputAction Drop => new();
-        }
-    }
-    
-    public interface IInputActionCollection2 {}
-}
-
-namespace MyNamespace {
-    [HandleInput(typeof(MyInput.InteractionActions), nameof(MyInput.Interaction.attack))]
-    [HandleInput(typeof(DragAndDropInput.DragAndDropActions))]
-    public partial class Something : MonoBehavior {
-        [GetComponent] private MonoBehavior mono, some, field, another;
-
-        [GetComponent] private object obj;
-
-        partial void MyInput_OnattackPerformed(InputAction.CallbackContext callbackContext) {
-            
-        }
-    }
-}
