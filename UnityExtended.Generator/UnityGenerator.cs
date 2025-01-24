@@ -12,60 +12,145 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace UnityExtended.Generator;
 
-public readonly record struct Variable {
-    public readonly string FullyQualifiedClassName;
-    public readonly string? ContainingNamespace;
-    public readonly string ContainingClass;
-    public readonly string TypeName;
-    public readonly string VariableName;
+public readonly record struct GetComponentAttributeData : IGenerateClass, IGenerateMethod, IGenerateStatements {
+    public Class GeneratedClass { get; }
 
-    public Variable(string fullyQualifiedClassName, ISymbol typeSymbol, string variableName) {
-        FullyQualifiedClassName = fullyQualifiedClassName;
-        (ContainingNamespace, ContainingClass) = fullyQualifiedClassName.SeparateFromFullyQualifiedName();
-        
-        TypeName = typeSymbol.ToDisplayString();
-        
-        VariableName = variableName;
-    }
-}
-
-public readonly record struct HandleInputData {
-    /// <summary>
-    /// Fully qualified name of decorated class.
-    /// </summary>
-    public readonly string FullyQualifiedClassName;
+    public Method Method { get; }
     
-    /// <summary>
-    /// Fully qualified names of action maps.
-    /// </summary>
-    public readonly string[] ActionMapTypes;
+    public List<StatementDeclaration> Statements { get; }
 
-    public readonly string[] PartialMethodNames;
+    private GetComponentAttributeData(string fullyQualifiedClassName, ITypeSymbol typeSymbol, string variableName) {
+        (string? namespaceName, string className) = fullyQualifiedClassName.SeparateFromFullyQualifiedName();
 
-    public HandleInputData(string fullyQualifiedClassName, string[] actionMapTypes, string[] partialMethodNames) {
-        FullyQualifiedClassName = fullyQualifiedClassName;
-        ActionMapTypes = actionMapTypes;
-        PartialMethodNames = partialMethodNames;
+        GeneratedClass = new Class(fullyQualifiedClassName, namespaceName, className);
+
+        string typeName = typeSymbol.ToDisplayString();
+        Method = new Method(GeneratorHelper.AwakeMethodSignature, fullyQualifiedClassName);
+        Statements = [
+            new StatementDeclaration($"{variableName} = GetComponent<{typeName}>();", Method)
+        ];
+    }
+    
+    public static IGenerate? TransformIntoIGenerate(GeneratorAttributeSyntaxContext context, CancellationToken _) {
+        var variableDeclaratorSyntax = (VariableDeclaratorSyntax)context.TargetNode;
+        var variableDeclarationSyntax = (VariableDeclarationSyntax)variableDeclaratorSyntax.Parent;
+        var typeSyntax = variableDeclarationSyntax.Type;
+        
+        var variableDeclaratorSymbol = ModelExtensions.GetDeclaredSymbol(context.SemanticModel, variableDeclaratorSyntax);
+        var classSymbol = variableDeclaratorSymbol.ContainingSymbol;
+        var typeSymbol = ModelExtensions.GetSymbolInfo(context.SemanticModel, typeSyntax).Symbol;
+
+        if (typeSymbol is not ITypeSymbol validTypeSymbol) return null;
+
+        var fullyQualifiedClassName = classSymbol.ToDisplayString();
+        var variableName = variableDeclaratorSymbol.Name;
+
+        return new GetComponentAttributeData(fullyQualifiedClassName, validTypeSymbol, variableName);
     }
 }
 
-public readonly record struct ActionMap {
-    public readonly string MapName;
-    public readonly string[] Actions;
+public readonly record struct HandleInputAttributeData : IGenerateClass, IGenerateMethods, IGenerateField, IGenerateStatements {
+    public Class GeneratedClass { get; }
+    public List<Method> Methods { get; }
+    public List<StatementDeclaration> Statements { get; } // TODO: combine into Method
+    public string FieldDeclaration { get; }
 
-    public ActionMap(string mapName, string[] actions) {
-        Actions = actions;
-        MapName = mapName;
+    private HandleInputAttributeData(ITypeSymbol classSymbol, ITypeSymbol actionMapSymbol, string[] inputActionNames, IMethodSymbol[] partialClassMethods) {
+        string fullyQualifiedClassName = classSymbol.ToDisplayString();
+
+        (string? namespaceName, string className) = fullyQualifiedClassName.SeparateFromFullyQualifiedName();
+
+        GeneratedClass = new Class(fullyQualifiedClassName, namespaceName, className);
+        
+        string fqActionMapTypeName = actionMapSymbol.ToDisplayString();
+        
+        (string inputAssetFullyQualifiedName, string actionMapName) = fqActionMapTypeName.SeparateFromFullyQualifiedName();
+        string inputAssetClassName = inputAssetFullyQualifiedName.ExtractConcreteClassName();
+
+        FieldDeclaration = $"private {fqActionMapTypeName} {actionMapName};";
+
+        Methods = [
+            new Method(GeneratorHelper.AwakeMethodSignature, fullyQualifiedClassName),
+            new Method(GeneratorHelper.OnEnableMethodSignature, fullyQualifiedClassName),
+            new Method(GeneratorHelper.OnDisableMethodSignature, fullyQualifiedClassName),
+        ];
+        
+        Statements = [
+            new ($"{actionMapName} = UnityExtended.Core.Types.InputSingletonsManager.GetInstance<{inputAssetFullyQualifiedName}>().{actionMapName.Replace("Actions", "")};", Methods[0]),
+        ];
+
+        foreach (var inputActionName in inputActionNames) {
+            foreach (var postfix in GeneratorHelper.InputActionPostfixes) {
+                string methodName = $"{inputAssetClassName}_On{inputActionName}{postfix}";
+                string methodSignature = $"partial void {methodName}(UnityEngine.InputSystem.InputAction.CallbackContext callbackContext)";
+                Methods.Add(new(methodSignature, fullyQualifiedClassName));
+
+                if (partialClassMethods.Any(x => x.Name == methodName)) {
+                    string subscriptionStatement =
+                        $"{actionMapName}.{inputActionName}.{postfix.ToLower()} += {methodName};";
+                    Statements.Add(new StatementDeclaration(subscriptionStatement, Methods[1]));
+                    Statements.Add(new StatementDeclaration(subscriptionStatement.Replace('+', '-'), Methods[2]));
+                }
+            }
+        }
     }
-}
 
-public readonly record struct InputAsset {
-    public readonly string FullyQualifiedClassName;
-    public readonly ActionMap[] ActionMaps;
+    public static IEnumerable<IGenerate> TransformToIGenerate(GeneratorAttributeSyntaxContext context,
+        CancellationToken _) {
+        var semanticModel = context.SemanticModel;
 
-    public InputAsset(string fullyQualifiedClassName, ActionMap[] actionMaps) {
-        FullyQualifiedClassName = fullyQualifiedClassName;
-        ActionMaps = actionMaps;
+        var classNode = (ClassDeclarationSyntax)context.TargetNode;
+        var classSymbol = context.TargetSymbol;
+        
+        if (classSymbol is not ITypeSymbol validClassSymbol) yield break;
+
+        foreach (var attributeData in context.Attributes) {
+            // Get AttributeSyntax
+            var syntaxReference = attributeData.ApplicationSyntaxReference;
+        
+            if (syntaxReference is null) continue;
+        
+            var attributeSyntax = (AttributeSyntax)syntaxReference.GetSyntax();
+             
+            if (attributeSyntax.ArgumentList is null) continue;
+        
+            // Get TypeSymbol
+            var arguments = attributeSyntax.ArgumentList.Arguments;
+            var attributeArgumentSyntax = arguments[0];
+        
+            var expression = (TypeOfExpressionSyntax)attributeArgumentSyntax.Expression;
+             
+            var type = expression.Type;
+            var typeSymbol = semanticModel.GetSymbolInfo(type).Symbol;
+             
+            if (typeSymbol is not ITypeSymbol validTypeSymbol) continue;
+
+            // Get action names
+            string[] actionNames = new string[arguments.Count - 1];
+
+            for (int i = 1; i < arguments.Count; i++) {
+                var argumentSyntax = arguments[i];
+
+                string literal = "";
+
+                if (argumentSyntax.Expression is LiteralExpressionSyntax stringExpression) {
+                    literal = stringExpression.Token.ValueText;
+                }
+                else if (argumentSyntax.Expression is InvocationExpressionSyntax invocationExpression) {
+                    var invocationArgumentExpressionSyntax = (MemberAccessExpressionSyntax)invocationExpression.ArgumentList.Arguments[0].Expression;
+                    literal = invocationArgumentExpressionSyntax.Name.Identifier.ValueText;
+                }
+
+                actionNames[i - 1] = literal;
+            }
+            
+            // get implemented partial methods
+            IEnumerable<IMethodSymbol> partialMethods = classNode.Members
+                .Where(x => x.Modifiers.Any(token => token.IsKind(SyntaxKind.PartialKeyword)))
+                .Select(x => (IMethodSymbol)semanticModel.GetDeclaredSymbol(x));
+
+            yield return new HandleInputAttributeData(validClassSymbol, validTypeSymbol, actionNames, partialMethods.ToArray());
+        }
     }
 }
 
@@ -79,302 +164,178 @@ public class UnityGenerator : IIncrementalGenerator {
 
         var variableProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
             "UnityExtended.Generator.Attributes.GetComponentAttribute",
-            static (_,_) => true, TransformIntoVariable)
+            static (_,_) => true, GetComponentAttributeData.TransformIntoIGenerate)
             .Where(x => x is not null)
-            .Select((v, _) => v!.Value)
-            .Collect();
-        
-        var inputInfoProvider = context.SyntaxProvider.CreateSyntaxProvider(
-            predicate: InputInfoPredicate, 
-            transform: TransformToInputInfo)
-            .Where(x => x is not null)
-            .Select((info, _) => info!.Value)
             .Collect();
         
         var handleInputProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
-                "UnityExtended.Generator.Attributes.HandleInputAttribute",
-                static (_,_) => true, TransformToHandleInputInfo)
-            .Where(x => x is not null)
-            .Select((v, _) => v!.Value)
+            "UnityExtended.Generator.Attributes.HandleInputAttribute",
+            static (_,_) => true, HandleInputAttributeData.TransformToIGenerate)
             .Collect();
 
-        var provider = variableProvider.Combine(inputInfoProvider).Combine(handleInputProvider);
+        var provider = variableProvider.Combine(handleInputProvider).Select(Selector);
         
         context.RegisterSourceOutput(provider, Execute);
 
     }
 
-    private static HandleInputData? TransformToHandleInputInfo(GeneratorAttributeSyntaxContext context, CancellationToken _) {
-        var semanticModel = context.SemanticModel;
+    private static IEnumerable<IGenerate> Selector((ImmutableArray<IGenerate?>, ImmutableArray<IEnumerable<IGenerate>>) tuple, CancellationToken _) {
+        (ImmutableArray<IGenerate?> left, ImmutableArray<IEnumerable<IGenerate>> right) = tuple;
 
-        var classDeclarationSyntax = (ClassDeclarationSyntax)context.TargetNode;
-        var classSymbol = context.TargetSymbol;
-        var className = classSymbol.ToDisplayString();
-
-        List<string> typeNames = new();
-        foreach (var attributeData in context.Attributes) {
-            var syntaxReference = attributeData.ApplicationSyntaxReference;
-
-            if (syntaxReference is null) continue;
-
-            var attributeSyntax = (AttributeSyntax)syntaxReference.GetSyntax();
-            
-            if (attributeSyntax.ArgumentList is null) continue;
-
-            var attributeArgumentSyntax = attributeSyntax.ArgumentList.Arguments[0];
-
-            var expression = (TypeOfExpressionSyntax)attributeArgumentSyntax.Expression;
-            
-            var type = expression.Type;
-            var typeSymbol = semanticModel.GetSymbolInfo(type).Symbol;
-            
-            if (typeSymbol == null) continue;
-            
-            var typeName = typeSymbol.ToDisplayString();
-            typeNames.Add(typeName);
+        foreach (var iGenerate in left) {
+            if (iGenerate is null) continue;
+            yield return iGenerate;
         }
 
-        List<string> partialMethods = new();
-        foreach (var member in classDeclarationSyntax.Members) {
-            if (member is MethodDeclarationSyntax methodDeclarationSyntax &&
-                methodDeclarationSyntax.Modifiers.Any(SyntaxKind.PartialKeyword)) {
-                var methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclarationSyntax);
-                
-                if (methodSymbol is null) continue;
-                
-                partialMethods.Add(methodSymbol.Name);
+        foreach (var enumerable in right) {
+            foreach (var iGenerate in enumerable) {
+                yield return iGenerate;
             }
         }
-
-        return new(className, typeNames.ToArray(), partialMethods.ToArray());
     }
 
-    private static InputAsset? TransformToInputInfo(GeneratorSyntaxContext context, CancellationToken _) {
-        var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
+    private static void Execute(SourceProductionContext context, IEnumerable<IGenerate> requiredGeneratedData) {
+        ExtractGeneratedClassesFromData(requiredGeneratedData, out Dictionary<string, Class> classesToGenerate); // hashed by FQName
 
-        // check if implements interface IInputActionCollection2
-        if (!classDeclarationSyntax.Implements(context.SemanticModel,
-                "UnityEngine.InputSystem.IInputActionCollection2")) return null;
+        AddSecondMethodsIfNecessary(classesToGenerate.Values);
         
-        // check for InputActions
-        List<ActionMap> inputActionsInfos = new();
-
-        foreach (var memberDeclarationSyntax in classDeclarationSyntax.Members) {
-            if (memberDeclarationSyntax is not StructDeclarationSyntax structDeclarationSyntax) continue;
-
-            var structSymbol = context.SemanticModel.GetDeclaredSymbol(structDeclarationSyntax);
-            
-            if (structSymbol is null) continue;
-            
-            var structName = structSymbol.Name;
-            
-            if (!structName.EndsWith("Actions")) continue;
-
-            List<string> actionNames = new();
-
-            foreach (var property in structDeclarationSyntax.Members.GetEveryPropertyOfType(context.SemanticModel, "UnityEngine.InputSystem.InputAction")) {
-                var propertySymbol = context.SemanticModel.GetDeclaredSymbol(property);
-                
-                if (propertySymbol is null) continue;
-                
-                var propertyName = propertySymbol.Name;
-                
-                actionNames.Add(propertyName);
-            }
-
-            ActionMap actionMap = new(structName, actionNames.ToArray());
-            inputActionsInfos.Add(actionMap);
-        }
-
-        if (inputActionsInfos.Count > 0) {
-            var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclarationSyntax);
-
-            if (classSymbol is null) return null;
-            
-            var className = classSymbol.ToDisplayString();
-
-            return new InputAsset(className, inputActionsInfos.ToArray());
-        }
-
-        return new();
-    }
-
-    private static bool InputInfoPredicate(SyntaxNode node, CancellationToken _) {
-        return node is ClassDeclarationSyntax { BaseList.Types.Count: > 0 };
-    }
-
-    private static void Execute(SourceProductionContext context, ((ImmutableArray<Variable> variables, ImmutableArray<InputAsset> inputInfos) tuple, ImmutableArray<HandleInputData> handleInputDatas) providerTuple) {
-        (ImmutableArray<Variable> variables, ImmutableArray<InputAsset> inputAssets) = providerTuple.tuple;
-        ImmutableArray<HandleInputData> handleInputDatas = providerTuple.handleInputDatas;
-        
-        // find all necessary classes as fully qualified name
-        HashSet<string> classesToGenerate = new();
-        foreach (var variable in variables) {
-            classesToGenerate.Add(variable.FullyQualifiedClassName);
-        }
-
-        foreach (var handleInput in handleInputDatas) {
-            classesToGenerate.Add(handleInput.FullyQualifiedClassName);
-        }
-
-        foreach (var classToGenerate in classesToGenerate) {
-            var validHandleInputDatas = handleInputDatas.Where(x => x.FullyQualifiedClassName == classToGenerate).ToArray();
-
-            GetRequiredDataForHandleInput(handleInputDatas, inputAssets,
-                out List<string> partialMethodsToBuild, out List<string> inputSubscriptions);
-            
+        foreach (var classToGenerate in classesToGenerate.Values) {
             IndentedStringBuilder stringBuilder = new();
 
-            var (containingNamespace, containingClass) = classToGenerate.SeparateFromFullyQualifiedName();
+            // open Namespace
+            if (classToGenerate.NamespaceName is { } namespaceName)
+                stringBuilder.AppendLine($"namespace {namespaceName} {{").IncrementIndent();
 
-            if (containingNamespace != null)
-                stringBuilder.AppendLine($"namespace {containingNamespace} {{").IncrementIndent();
+            // open Class
+            stringBuilder.AppendLine($"partial class {classToGenerate.ClassName} {{").IncrementIndent();
 
-            stringBuilder.AppendLine($"public partial class {containingClass} {{").IncrementIndent();
-            
-            // create fields
-            foreach (var handleInput in validHandleInputDatas) {
-                foreach (var actionType in handleInput.ActionMapTypes) {
-                    string concreteTypeName = actionType.ExtractConcreteClassName();
-                    stringBuilder.AppendLine($"private {actionType} {concreteTypeName};");
-                }
+            //// fields
+            foreach (var fieldDeclaration in classToGenerate.Fields) {
+                stringBuilder.AppendLine(fieldDeclaration);
             }
 
             stringBuilder.AppendLine();
-            
-            // create Awake
-            stringBuilder.AppendLine("private void Awake() {").IncrementIndent();
-            
-            //// get components
-            foreach (var variable in variables.Where(x => x.FullyQualifiedClassName == classToGenerate)) {
-                stringBuilder.AppendLine($"{variable.VariableName} = GetComponent<{variable.TypeName}>();");
-            }
 
-            stringBuilder.AppendLine();
-            
-            //// field init
-            foreach (var handleInput in validHandleInputDatas) {
-                foreach (var fullyQualifiedActionMapTypeName in handleInput.ActionMapTypes) {
-                    (string inputAssetName, string actionMapName) =
-                        fullyQualifiedActionMapTypeName.SeparateFromFullyQualifiedName();
-                    
-                    stringBuilder.AppendLine($"{actionMapName} = UnityExtended.Core.Types.InputSingletonsManager.GetInstance<{inputAssetName}>().{actionMapName.Replace("Actions", "")};");
+            //// methods
+            foreach (var method in classToGenerate.Methods) {
+                if (method.MethodSignature.Contains("partial")) {
+                    stringBuilder.AppendLine($"{method.MethodSignature};").AppendLine();
+                }
+                else {
+                    stringBuilder.AppendLine($"{method.MethodSignature} {{").IncrementIndent();
+                
+                    foreach (var statement in method.Statements) {
+                        stringBuilder.AppendLine(statement);
+                    }
+
+                    stringBuilder.DecrementIndent().AppendLine("}").AppendLine();
                 }
             }
 
-            stringBuilder.AppendLine("Awake2();");
-            stringBuilder.DecrementIndent().AppendLine("}").AppendLine(); 
-            // close Awake
+            stringBuilder.DecrementIndent().AppendLine("}"); 
+            // close Class
 
-            stringBuilder.AppendLine("partial void Awake2();").AppendLine();
-
-            // OnEnable
-            stringBuilder.AppendLine("private void OnEnable() {").IncrementIndent();
+            if (classToGenerate.NamespaceName is not null)
+                stringBuilder.DecrementIndent().AppendLine("}");
+            // close Namespace
             
-            foreach (var inputSubscription in inputSubscriptions) {
-                stringBuilder.AppendLine(inputSubscription);
-            }
-
-            stringBuilder.AppendLine("OnEnable2();");
-
-            stringBuilder.DecrementIndent().AppendLine("}").AppendLine();
-            // close OnEnable
-
-            stringBuilder.AppendLine("partial void OnEnable2();").AppendLine();
-            
-            // OnDisable
-            stringBuilder.AppendLine("private void OnDisable() {").IncrementIndent();
-            
-            foreach (var inputSubscription in inputSubscriptions) {
-                stringBuilder.AppendLine(inputSubscription.Replace('+', '-'));
-            }
-            
-            stringBuilder.AppendLine("OnDisable2();").AppendLine();
-
-            stringBuilder.DecrementIndent().AppendLine("}").AppendLine();
-            // close OnDisable
-            
-            stringBuilder.AppendLine("partial void OnDisable2();");
-            
-            foreach (var method in partialMethodsToBuild) {
-                stringBuilder.AppendLine(method);
-            }
-            
-            stringBuilder.DecrementIndent().AppendLine("}"); // close Class
-            
-            if (containingNamespace != null) stringBuilder.DecrementIndent().AppendLine("}"); // close namespace
-            
-            context.AddSource($"{containingClass}.g.cs", stringBuilder.ToString());
+            context.AddSource($"{classToGenerate.FullyQualifiedClassName}.g.cs", stringBuilder.ToString());
         }
     }
 
-    private static void GetRequiredDataForHandleInput(ImmutableArray<HandleInputData> attributesData, ImmutableArray<InputAsset> inputAssets,
-        out List<string> partialMethodsToBuild, out List<string> inputSubscriptions) {
-        partialMethodsToBuild = new();
-        inputSubscriptions = new();
-
-        foreach (var handleInput in attributesData) {
-            foreach (string inputMapType in handleInput.ActionMapTypes) {
-                (string inputMapAssetName, string actionMapName) = inputMapType.SeparateFromFullyQualifiedName();
-                InputAsset? inputAsset;
-
-                try {
-                    inputAsset = inputAssets.FirstOrDefault(x => x.FullyQualifiedClassName == inputMapAssetName);
-                }
-                catch (Exception e) {
-                    // log error (into file?)
-                    continue;
-                }
-
-                if (inputAsset is not { } validAsset) continue;
-
-                ActionMap? actionMap = validAsset.ActionMaps.FirstOrDefault(x => x.MapName == actionMapName);
-
-                if (actionMap is not { } validMap) continue;
-
-                foreach (var actionName in validMap.Actions) {
-                    string performedSignature =
-                        $"partial void On{validMap.MapName}_{actionName}Performed(UnityEngine.InputSystem.InputAction.CallbackContext context);";
-
-                    string canceledSignature =
-                        $"partial void On{validMap.MapName}_{actionName}Canceled(UnityEngine.InputSystem.InputAction.CallbackContext context);";
-
-                    string startedSignature =
-                        $"partial void On{validMap.MapName}_{actionName}Started(UnityEngine.InputSystem.InputAction.CallbackContext context);";
-
-                    partialMethodsToBuild.Add(performedSignature);
-                    partialMethodsToBuild.Add(canceledSignature);
-                    partialMethodsToBuild.Add(startedSignature);
-
-                    string performedName = $"On{validMap.MapName}_{actionName}Performed";
-                    string canceledName = $"On{validMap.MapName}_{actionName}Canceled";
-                    string startedName = $"On{validMap.MapName}_{actionName}Started";
-
-                    if (handleInput.PartialMethodNames.Contains(performedName))
-                        inputSubscriptions.Add($"{validMap.MapName}.{actionName}.performed += {performedName};");
-                    if (handleInput.PartialMethodNames.Contains(canceledName))
-                        inputSubscriptions.Add($"{validMap.MapName}.{actionName}.canceled += {canceledName};");
-                    if (handleInput.PartialMethodNames.Contains(startedName))
-                        inputSubscriptions.Add($"{validMap.MapName}.{actionName}.started += {startedName};");
-                }
-            }
-        }
-    }
-
-    private static Variable? TransformIntoVariable(GeneratorAttributeSyntaxContext context, CancellationToken _) {
-        var variableDeclaratorSyntax = (VariableDeclaratorSyntax)context.TargetNode;
-        var variableDeclarationSyntax = (VariableDeclarationSyntax)variableDeclaratorSyntax.Parent;
-        var typeSyntax = variableDeclarationSyntax.Type;
+    private static void ExtractGeneratedClassesFromData(IEnumerable<IGenerate> requiredGeneratedData,
+        out Dictionary<string, Class> classesToGenerate) {
+        classesToGenerate = new();
         
-        var variableDeclaratorSymbol = ModelExtensions.GetDeclaredSymbol(context.SemanticModel, variableDeclaratorSyntax);
-        var classSymbol = variableDeclaratorSymbol.ContainingSymbol;
-        var typeSymbol = ModelExtensions.GetSymbolInfo(context.SemanticModel, typeSyntax).Symbol;
+        foreach (var generateData in requiredGeneratedData) {
+            if (generateData is IGenerateClass classGenerator) {
+                if (!classesToGenerate.ContainsKey(classGenerator.GeneratedClass.FullyQualifiedClassName)) {
+                    classesToGenerate.Add(classGenerator.GeneratedClass.FullyQualifiedClassName,
+                        classGenerator.GeneratedClass);
+                }
+            }
+            if (generateData is IGenerateMethods methodsGenerator) {
+                if (classesToGenerate.TryGetValue(methodsGenerator.GeneratedClass.FullyQualifiedClassName, out Class existingClass)) {
+                    existingClass.TryAddMethods(methodsGenerator.Methods);
+                }
+                else {
+                    classesToGenerate.Add(methodsGenerator.GeneratedClass.FullyQualifiedClassName, methodsGenerator.GeneratedClass);
+                    methodsGenerator.GeneratedClass.TryAddMethods(methodsGenerator.Methods);
+                }
+            }
+            if (generateData is IGenerateMethod methodGenerator) {
+                if (classesToGenerate.TryGetValue(methodGenerator.GeneratedClass.FullyQualifiedClassName, out Class existingClass)) {
+                    existingClass.TryAddMethod(methodGenerator.Method);
+                }
+                else {
+                    classesToGenerate.Add(methodGenerator.GeneratedClass.FullyQualifiedClassName, methodGenerator.GeneratedClass);
+                    methodGenerator.GeneratedClass.TryAddMethod(methodGenerator.Method);
+                }
+            }
+            if (generateData is IGenerateStatements generateStatements) {
+                if (!classesToGenerate.TryGetValue(generateStatements.GeneratedClass.FullyQualifiedClassName, out Class existingClass)) {
+                    classesToGenerate.Add(generateStatements.GeneratedClass.FullyQualifiedClassName, generateStatements.GeneratedClass);
+                    existingClass = generateStatements.GeneratedClass;
+                }
+                
+                foreach (var statement in generateStatements.Statements) {
+                    existingClass.GetOrAddMethod(statement.TargetMethod).TryAddStatement(statement);
+                }
+            }
+            if (generateData is IGenerateStatement generateStatement) {
+                if (!classesToGenerate.TryGetValue(generateStatement.GeneratedClass.FullyQualifiedClassName, out Class existingClass)) {
+                    classesToGenerate.Add(generateStatement.GeneratedClass.FullyQualifiedClassName, generateStatement.GeneratedClass);
+                    existingClass = generateStatement.GeneratedClass;
+                }
+                
+                existingClass.GetOrAddMethod(generateStatement.Method).TryAddStatement(generateStatement.Statement);
+            }
 
-        if (typeSymbol is null) return null;
+            if (generateData is IGenerateField generateField) {
+                if (!classesToGenerate.TryGetValue(generateField.GeneratedClass.FullyQualifiedClassName, out Class existingClass)) {
+                    classesToGenerate.Add(generateField.GeneratedClass.FullyQualifiedClassName, generateField.GeneratedClass);
+                    existingClass = generateField.GeneratedClass;
+                }
 
-        var className = classSymbol.ToDisplayString();
-        var variableName = variableDeclaratorSymbol.Name;
+                existingClass.TryAddField(generateField.FieldDeclaration);
+            }
+        }
+    }
 
-        return new Variable(className, typeSymbol, variableName);
+    private static void AddSecondMethodsIfNecessary(IEnumerable<Class> classesToGenerate) {
+        foreach (var classToGenerate in classesToGenerate) {
+            Method awakeMethod =
+                classToGenerate.Methods.FirstOrDefault(x => x.MethodSignature == GeneratorHelper.AwakeMethodSignature);
+
+            if (awakeMethod != default) {
+                var awake2Method = new Method(GeneratorHelper.Awake2MethodSignature,
+                    classToGenerate.FullyQualifiedClassName);
+                classToGenerate.TryAddMethod(awake2Method);
+
+                awakeMethod.TryAddStatement(new StatementDeclaration("Awake2();", awakeMethod));
+            }
+            
+            Method onEnableMethod =
+                classToGenerate.Methods.FirstOrDefault(x => x.MethodSignature == GeneratorHelper.OnEnableMethodSignature);
+            
+            if (onEnableMethod != default) {
+                var onEnable2Method = new Method(GeneratorHelper.OnEnable2MethodSignature,
+                    classToGenerate.FullyQualifiedClassName);
+                classToGenerate.TryAddMethod(onEnable2Method);
+
+                onEnableMethod.TryAddStatement(new StatementDeclaration("OnEnable2();", onEnableMethod));
+            }
+            
+            Method onDisableMethod =
+                classToGenerate.Methods.FirstOrDefault(x => x.MethodSignature == GeneratorHelper.OnDisableMethodSignature);
+            
+            if (onDisableMethod != default) {
+                var onDisable2Method = new Method(GeneratorHelper.OnDisable2MethodSignature,
+                    classToGenerate.FullyQualifiedClassName);
+                classToGenerate.TryAddMethod(onDisable2Method);
+
+                onDisableMethod.TryAddStatement(new StatementDeclaration("OnEnable2();", onDisableMethod));
+            }
+        }
     }
 }

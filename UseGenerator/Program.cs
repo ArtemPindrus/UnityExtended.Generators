@@ -44,16 +44,17 @@ namespace UnityEngine.InputSystem {
 }
 
 namespace MyNamespace {
-    [HandleInput(typeof(MyInput.InteractionActions))]
-    [HandleInput(typeof(DragAndDropInput.DragAndDropActions))]
+    [HandleInput(typeof(MyInput.InteractionActions), nameof(MyInput.Interaction.attack))]
     public partial class Something : MonoBehavior {
         [GetComponent] private MonoBehavior mono, some, field, another;
 
         [GetComponent] private object obj;
 
-        partial void OnAttack() {
-            
-        }
+        partial void PartialImplemented(){
+            Console.WriteLine(""hey"");
+        };
+
+        partial void PartialNotImpl();
     }
 }
 ");
@@ -82,6 +83,8 @@ namespace UnityEngine.InputSystem {
     } 
     
     public partial class MyInput : IInputActionCollection2 {
+        public InteractionActions Interaction;
+        
         public struct InteractionActions {
             public InputAction attack => new();
             public InputAction interact => new();
@@ -89,6 +92,8 @@ namespace UnityEngine.InputSystem {
     }
 
     public partial class DragAndDropInput : IInputActionCollection2 {
+        public DragAndDropActions DragAndDrop;
+        
         public struct DragAndDropActions {
             public InputAction Drag => new();
             public InputAction Drop => new();
@@ -99,15 +104,15 @@ namespace UnityEngine.InputSystem {
 }
 
 namespace MyNamespace {
-    [HandleInput(typeof(MyInput.InteractionActions))]
+    [HandleInput(typeof(MyInput.InteractionActions), nameof(MyInput.Interaction.attack))]
     [HandleInput(typeof(DragAndDropInput.DragAndDropActions))]
     public partial class Something : MonoBehavior {
         [GetComponent] private MonoBehavior mono, some, field, another;
 
         [GetComponent] private object obj;
 
-        partial void OnDragAndDropActions_DragPerformed(InputAction.CallbackContext context) {
-            // do some
+        partial void MyInput_OnattackPerformed(InputAction.CallbackContext callbackContext) {
+            
         }
     }
 }

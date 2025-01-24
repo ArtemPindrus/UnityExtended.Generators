@@ -14,10 +14,19 @@ namespace UnityExtended.Generator.Attributes {
     public class HandleInputAttribute : Attribute {
         public Type InputActionsType;
 
-        public HandleInputAttribute(Type inputActionsType) {
+        public HandleInputAttribute(Type inputActionsType, params string[] inputActionNames) {
             InputActionsType = inputActionsType;
         }
     }
 }
 ";
+
+    public const string AwakeMethodSignature = "private void Awake()";
+    public const string Awake2MethodSignature = "partial void Awake2()";
+    public const string OnEnableMethodSignature = "private void OnEnable()";
+    public const string OnEnable2MethodSignature = "partial void OnEnable2()";
+    public const string OnDisableMethodSignature = "private void OnDisable()";
+    public const string OnDisable2MethodSignature = "partial void OnDisable2()";
+
+    public static string[] InputActionPostfixes = ["Performed", "Started", "Canceled"];
 }

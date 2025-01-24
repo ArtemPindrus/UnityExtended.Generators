@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 
 namespace UnityExtended.Generator;
 
@@ -9,7 +11,7 @@ internal static class GeneratorExtensions {
         if (classDeclarationSyntax.BaseList == null || classDeclarationSyntax.BaseList.Types.Count == 0) return false;
         
         foreach (var baseTypeSyntax in classDeclarationSyntax.BaseList.Types) {
-            var typeSymbol = semanticModel.GetSymbolInfo(baseTypeSyntax.Type).Symbol;
+            var typeSymbol = ModelExtensions.GetSymbolInfo(semanticModel, baseTypeSyntax.Type).Symbol;
             
             if (typeSymbol == null) continue;
 
@@ -32,7 +34,7 @@ internal static class GeneratorExtensions {
             if (structMemberDeclaration is not PropertyDeclarationSyntax propertyDeclarationSyntax) continue;
 
             var typeSyntax = propertyDeclarationSyntax.Type;
-            var typeSymbol = semanticModel.GetSymbolInfo(typeSyntax).Symbol;
+            var typeSymbol = ModelExtensions.GetSymbolInfo(semanticModel, typeSyntax).Symbol;
 
             if (typeSymbol == null) continue;
 
