@@ -154,6 +154,39 @@ public readonly record struct HandleInputAttributeData : IGenerateClass, IGenera
     }
 }
 
+public readonly record struct SerializePropertyWithBackingAttributeData : IGenerateClass, IGenerateField, IGenerateMethod, IGenerateStatement {
+    public Class GeneratedClass { get; }
+    public string FieldDeclaration { get; }
+    public Method Method { get; }
+    
+    public StatementDeclaration Statement { get; }
+
+    private SerializePropertyWithBackingAttributeData(SemanticModel semanticModel, ITypeSymbol classSymbol, PropertyDeclarationSyntax propertyDeclarationSyntax) {
+        GeneratedClass = new(classSymbol);
+
+        Method = new(GeneratorHelper.OnValidateMethodSignature, GeneratedClass.FullyQualifiedClassName);
+
+        var type = propertyDeclarationSyntax.Type;
+        var typeSymbol = semanticModel.GetSymbolInfo(type).Symbol;
+        var typeName = typeSymbol.ToDisplayString();
+
+        var identifier = propertyDeclarationSyntax.Identifier.ValueText;
+        var fieldName = identifier.ToLowerFirst();
+        
+        FieldDeclaration = $"[UnityEngine.SerializeField] private {typeName} {fieldName};";
+        
+        Statement = new($"{identifier} = {fieldName};", Method);
+    }
+
+    public static IGenerate TransformIntoIGenerate(GeneratorAttributeSyntaxContext context, CancellationToken _) {
+        SemanticModel semanticModel = context.SemanticModel;
+
+        var classSymbol = (ITypeSymbol)context.TargetSymbol.ContainingSymbol;
+
+        return new SerializePropertyWithBackingAttributeData(semanticModel, classSymbol, (PropertyDeclarationSyntax)context.TargetNode);
+    }
+}
+
 [Generator]
 public class UnityGenerator : IIncrementalGenerator {
     public void Initialize(IncrementalGeneratorInitializationContext context) {
@@ -162,9 +195,15 @@ public class UnityGenerator : IIncrementalGenerator {
                 SourceText.From(GeneratorHelper.Attributes, Encoding.UTF8));
         });
 
-        var variableProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
+        var getComponentProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
             "UnityExtended.Generator.Attributes.GetComponentAttribute",
             static (_,_) => true, GetComponentAttributeData.TransformIntoIGenerate)
+            .Where(x => x is not null)
+            .Collect();
+        
+        var serializePropertyProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
+            "UnityExtended.Generator.Attributes.SerializePropertyWithBackingAttribute",
+            static (_,_) => true, SerializePropertyWithBackingAttributeData.TransformIntoIGenerate)
             .Where(x => x is not null)
             .Collect();
         
@@ -173,10 +212,29 @@ public class UnityGenerator : IIncrementalGenerator {
             static (_,_) => true, HandleInputAttributeData.TransformToIGenerate)
             .Collect();
 
-        var provider = variableProvider.Combine(handleInputProvider).Select(Selector);
+        var provider = getComponentProvider.Combine(handleInputProvider).Combine(serializePropertyProvider).Select(Selector);
         
         context.RegisterSourceOutput(provider, Execute);
 
+    }
+
+    private IEnumerable<IGenerate> Selector(((ImmutableArray<IGenerate?> arrayL, ImmutableArray<IEnumerable<IGenerate>> arrayR) tuple, ImmutableArray<IGenerate?> array) tuple, CancellationToken _) {
+        var first = tuple.array;
+        (var second, var third) = tuple.tuple;
+
+        foreach (var ig in first) {
+            if (ig is not null) yield return ig;
+        }
+
+        foreach (var ig in second) {
+            if (ig is not null) yield return ig;
+        }
+
+        foreach (var enumerable in third) {
+            foreach (var ig in enumerable) {
+                if (ig is not null) yield return ig;
+            }
+        }
     }
 
     private static IEnumerable<IGenerate> Selector((ImmutableArray<IGenerate?>, ImmutableArray<IEnumerable<IGenerate>>) tuple, CancellationToken _) {
