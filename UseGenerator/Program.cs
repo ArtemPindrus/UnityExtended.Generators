@@ -12,10 +12,10 @@ internal class Program {
     public static void Main() {
         string mocking = File.ReadAllText(@"C:\Users\Artem\Documents\C#\UnityExtended.Generator\UseGenerator\Mocking\MockingUnity.cs");
         string source = File.ReadAllText(@"C:\Users\Artem\Documents\C#\UnityExtended.Generator\UseGenerator\Source.cs");
-        string sourceText = source + "\n" + mocking;
-        
-        var syntaxTree = CSharpSyntaxTree.ParseText(sourceText);
-        var compilation = CSharpCompilation.Create("UseGenerator", new []{ syntaxTree });
+
+        SyntaxTree sourceSyntaxTree = CSharpSyntaxTree.ParseText(source);
+        SyntaxTree mockingSyntaxTree = CSharpSyntaxTree.ParseText(mocking);
+        CSharpCompilation compilation = CSharpCompilation.Create("UseGenerator", [sourceSyntaxTree, mockingSyntaxTree]);
 
         var generator = new UnityGenerator();
         
