@@ -55,39 +55,42 @@ public readonly record struct HandleInputAttributeData : IGenerateClass, IGenera
     public List<StatementDeclaration> Statements { get; } // TODO: combine into Method
     public string FieldDeclaration { get; }
 
-    private HandleInputAttributeData(ITypeSymbol classSymbol, ITypeSymbol actionMapSymbol, string[] inputActionNames, IMethodSymbol[] partialClassMethods) {
-        string fullyQualifiedClassName = classSymbol.ToDisplayString();
-
-        (string? namespaceName, string className) = fullyQualifiedClassName.SeparateFromFullyQualifiedName();
-
-        GeneratedClass = new Class(fullyQualifiedClassName, namespaceName, className);
+    private HandleInputAttributeData(ITypeSymbol classSymbol, ITypeSymbol actionMapClassSymbol) {
+        GeneratedClass = new(classSymbol);
         
-        string fqActionMapTypeName = actionMapSymbol.ToDisplayString();
+        string fullyQualifiedClassName = GeneratedClass.FullyQualifiedClassName;
+        string fqActionMapName = actionMapClassSymbol.ToDisplayString();
         
-        (string inputAssetFullyQualifiedName, string actionMapName) = fqActionMapTypeName.SeparateFromFullyQualifiedName();
+        (string inputAssetFullyQualifiedName, string actionMapName) = fqActionMapName.SeparateFromFullyQualifiedName();
         string inputAssetClassName = inputAssetFullyQualifiedName.ExtractConcreteClassName();
-
-        FieldDeclaration = $"private {fqActionMapTypeName} {actionMapName};";
-
+        
+        FieldDeclaration = $"private {fqActionMapName} {actionMapName};";
+        
         Methods = [
             new Method(GeneratorHelper.AwakeMethodSignature, fullyQualifiedClassName),
             new Method(GeneratorHelper.OnEnableMethodSignature, fullyQualifiedClassName),
             new Method(GeneratorHelper.OnDisableMethodSignature, fullyQualifiedClassName),
         ];
         
+        
         Statements = [
             new ($"{actionMapName} = UnityExtended.Core.Types.InputSingletonsManager.GetInstance<{inputAssetFullyQualifiedName}>().{actionMapName.Replace("Actions", "")};", Methods[0]),
         ];
 
-        foreach (var inputActionName in inputActionNames) {
+        var inputActions = actionMapClassSymbol.GetMembers().Where(x => x.Kind == SymbolKind.Property);
+        var methodsInClass = classSymbol.GetMembers().Where(x => x is IMethodSymbol methodSymbol).ToArray();
+
+        foreach (var inputActionSymbol in inputActions) {
+            var actionName = inputActionSymbol.Name;
+
             foreach (var postfix in GeneratorHelper.InputActionPostfixes) {
-                string methodName = $"{inputAssetClassName}_On{inputActionName}{postfix}";
+                string methodName = $"{inputAssetClassName}_{actionMapName}_On{actionName}{postfix}";
                 string methodSignature = $"partial void {methodName}(UnityEngine.InputSystem.InputAction.CallbackContext callbackContext)";
                 Methods.Add(new(methodSignature, fullyQualifiedClassName));
 
-                if (partialClassMethods.Any(x => x.Name == methodName)) {
+                if (methodsInClass.Any(x => x.Name == methodName)) {
                     string subscriptionStatement =
-                        $"{actionMapName}.{inputActionName}.{postfix.ToLower()} += {methodName};";
+                        $"{actionMapName}.{actionName}.{postfix.ToLower()} += {methodName};";
                     Statements.Add(new StatementDeclaration(subscriptionStatement, Methods[1]));
                     Statements.Add(new StatementDeclaration(subscriptionStatement.Replace('+', '-'), Methods[2]));
                 }
@@ -99,7 +102,6 @@ public readonly record struct HandleInputAttributeData : IGenerateClass, IGenera
         CancellationToken _) {
         var semanticModel = context.SemanticModel;
 
-        var classNode = (ClassDeclarationSyntax)context.TargetNode;
         var classSymbol = context.TargetSymbol;
         
         if (classSymbol is not ITypeSymbol validClassSymbol) yield break;
@@ -120,36 +122,12 @@ public readonly record struct HandleInputAttributeData : IGenerateClass, IGenera
         
             var expression = (TypeOfExpressionSyntax)attributeArgumentSyntax.Expression;
              
-            var type = expression.Type;
-            var typeSymbol = semanticModel.GetSymbolInfo(type).Symbol;
-             
-            if (typeSymbol is not ITypeSymbol validTypeSymbol) continue;
-
-            // Get action names
-            string[] actionNames = new string[arguments.Count - 1];
-
-            for (int i = 1; i < arguments.Count; i++) {
-                var argumentSyntax = arguments[i];
-
-                string literal = "";
-
-                if (argumentSyntax.Expression is LiteralExpressionSyntax stringExpression) {
-                    literal = stringExpression.Token.ValueText;
-                }
-                else if (argumentSyntax.Expression is InvocationExpressionSyntax invocationExpression) {
-                    var invocationArgumentExpressionSyntax = (MemberAccessExpressionSyntax)invocationExpression.ArgumentList.Arguments[0].Expression;
-                    literal = invocationArgumentExpressionSyntax.Name.Identifier.ValueText;
-                }
-
-                actionNames[i - 1] = literal;
-            }
+            TypeSyntax actionMapType = expression.Type;
+            ITypeSymbol? actionMapTypeSymbol = semanticModel.GetTypeInfo(actionMapType).Type;
             
-            // get implemented partial methods
-            IEnumerable<IMethodSymbol> partialMethods = classNode.Members
-                .Where(x => x.Modifiers.Any(token => token.IsKind(SyntaxKind.PartialKeyword)))
-                .Select(x => (IMethodSymbol)semanticModel.GetDeclaredSymbol(x));
+            if (actionMapTypeSymbol is null) continue;
 
-            yield return new HandleInputAttributeData(validClassSymbol, validTypeSymbol, actionNames, partialMethods.ToArray());
+            yield return new HandleInputAttributeData(validClassSymbol, actionMapTypeSymbol);
         }
     }
 }

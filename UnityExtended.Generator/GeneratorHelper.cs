@@ -14,10 +14,7 @@ namespace UnityExtended.Generator.Attributes {
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public class HandleInputAttribute : Attribute {
-        public Type InputActionsType;
-
-        public HandleInputAttribute(Type inputActionsType, params string[] inputActionNames) {
-            InputActionsType = inputActionsType;
+        public HandleInputAttribute(Type inputActionsType) {
         }
     }
 
