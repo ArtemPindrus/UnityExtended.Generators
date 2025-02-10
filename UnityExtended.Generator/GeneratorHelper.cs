@@ -22,7 +22,10 @@ public static class GeneratorHelper {
     public const string OnDisable2MethodSignature = "partial void OnDisable2()";
 
     public const string OnValidateMethodSignature = "private void OnValidate()";
-    public const string OnValidate2MethodSignature = "private void OnValidate2()";
+    public const string OnValidate2MethodSignature = "partial void OnValidate2()";
+    
+    public const string OnDestroyMethodSignature = "private void OnDestroy()";
+    public const string OnDestroy2MethodSignature = "partial void OnDestroy2()";
 
     public static readonly string[] InputActionPostfixes = ["Performed", "Started", "Canceled"];
     
