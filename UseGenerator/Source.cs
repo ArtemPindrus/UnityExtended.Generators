@@ -10,7 +10,8 @@ namespace MyNamespace {
 
         [SerializePropertyWithBacking]
         private MonoBehavior M {
-            get => new();
+            get => m;
+            set => throw new NotSupportedException();
         }
     }
 }
