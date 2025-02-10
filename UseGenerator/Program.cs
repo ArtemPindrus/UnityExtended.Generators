@@ -1,12 +1,6 @@
-﻿using System.Text.Json.Serialization.Metadata;
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using UnityExtended.Generator;
-
-using UnityExtended.Generator.Attributes;
-using UnityEngine;
-using UnityEngine.InputSystem;
-
 
 internal class Program {
     public static void Main() {
@@ -15,12 +9,15 @@ internal class Program {
 
         SyntaxTree sourceSyntaxTree = CSharpSyntaxTree.ParseText(source);
         SyntaxTree mockingSyntaxTree = CSharpSyntaxTree.ParseText(mocking);
-        CSharpCompilation compilation = CSharpCompilation.Create("UseGenerator", [sourceSyntaxTree, mockingSyntaxTree]);
+        
+        CSharpCompilation compilation = CSharpCompilation
+            .Create("UseGenerator", [sourceSyntaxTree, mockingSyntaxTree])
+            .AddReferences(MetadataReference.CreateFromFile(typeof(string).Assembly.Location));
 
         var generator = new UnityGenerator();
         
         GeneratorDriver driver = CSharpGeneratorDriver.Create(generator);
-        driver = driver.RunGenerators(compilation);
+        driver.RunGenerators(compilation);
     }
 }
 
