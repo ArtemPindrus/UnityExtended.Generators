@@ -38,9 +38,17 @@ public class UnityGenerator : IIncrementalGenerator {
             $"{GeneratorHelper.AttributesNamespace}.SerializePropertyWithBackingAttribute",
             static (_,_) => true, SerializePropertyWithBackingAttributeData.TransformIntoIGenerate)
             .Collect();
-        
 
-        var provider = GeneratorHelper.ValuesCombine(getComponentProvider, handleInputProvider, collectProvider, serializePropertyProvider);
+        var foldoutGroupProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
+            $"{GeneratorHelper.AttributesNamespace}.StartFoldoutGroupAttribute",
+            static (_, _) => true, FoldoutGroupAttributeData.TransformIntoIGenerate)
+            .Collect();
+
+        var provider = GeneratorHelper.ValuesCombine(getComponentProvider, 
+            handleInputProvider, 
+            collectProvider, 
+            serializePropertyProvider, 
+            foldoutGroupProvider);
         
         context.RegisterSourceOutput(provider, Execute);
     }

@@ -64,4 +64,23 @@ namespace UnityExtended.Generators.Attributes {
     [AttributeUsage(AttributeTargets.Class)]
     public class CollectAttribute : Attribute {
     }
+
+    [AttributeUsage(AttributeTargets.Field)]
+    public class StartFoldoutGroupAttribute : Attribute {
+        public StartFoldoutGroupAttribute(string groupName){}
+    }
+    
+    [AttributeUsage(AttributeTargets.Field)]
+    public class EndFoldoutGroupAttribute : Attribute {
+        
+    }
+}
+
+namespace EditorAttributes {
+    public struct Void {}
+    
+    [AttributeUsage(AttributeTargets.Field)]
+    public class FoldoutGroupAttribute : Attribute {
+        public FoldoutGroupAttribute(string groupName, params string[] fields){}
+    }
 }
