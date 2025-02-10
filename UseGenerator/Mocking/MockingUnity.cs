@@ -3,12 +3,13 @@ namespace UnityEngine {
         SubsystemRegistration
     }
     
+    [AttributeUsage(AttributeTargets.Method)]
     public class RuntimeInitializeOnLoadMethodAttribute : Attribute {
         public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType type) {}
     }
     
     public class MonoBehavior {
-        protected T GetComponent<T>() => default;
+        protected T GetComponent<T>() => throw new NotSupportedException();
     }
     
     public class SerializeFieldAttribute : Attribute {}
