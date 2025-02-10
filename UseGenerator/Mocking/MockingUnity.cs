@@ -1,4 +1,12 @@
 namespace UnityEngine {
+    public enum RuntimeInitializeLoadType {
+        SubsystemRegistration
+    }
+    
+    public class RuntimeInitializeOnLoadMethodAttribute : Attribute {
+        public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType type) {}
+    }
+    
     public class MonoBehavior {
         protected T GetComponent<T>() => default;
     }
@@ -19,8 +27,8 @@ namespace UnityEngine.InputSystem {
         public InteractionActions Interaction;
         
         public struct InteractionActions {
-            public InputAction attack => new();
-            public InputAction interact => new();
+            public InputAction Attack => new();
+            public InputAction Interact => new();
         }
     }
 
