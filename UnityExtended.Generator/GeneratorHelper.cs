@@ -25,4 +25,25 @@ public static class GeneratorHelper {
     public const string OnValidate2MethodSignature = "private void OnValidate2()";
 
     public static readonly string[] InputActionPostfixes = ["Performed", "Started", "Canceled"];
+    
+    public static IEnumerable<Class> ExtractGeneratedClassesFromData(IEnumerable<IGenerate> requiredGeneratedData) {
+        Dictionary<string, Class> classesToGenerate = new();
+        
+        foreach (var generateData in requiredGeneratedData) {
+            if (generateData is IGenerateClass classGenerator) {
+                Class generatedClass = classGenerator.GeneratedClass;
+                
+                if (classesToGenerate.TryGetValue(generatedClass.FullyQualifiedName,
+                        out Class existing)) {
+                    existing.Merge(generatedClass);
+                }
+                else {
+                    classesToGenerate.Add(generatedClass.FullyQualifiedName, generatedClass);
+                }
+            }
+        }
+
+        return classesToGenerate.Values;
+    }
+
 }
