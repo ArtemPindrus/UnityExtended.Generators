@@ -21,9 +21,7 @@ public readonly record struct CollectAttributeData : IGenerateClass {
         Method tryGetByHashCode = new($"public static bool TryGetByHashCode(int hashCode, out {fqClassName} item)");
         tryGetByHashCode.AddStatement("return collection.TryGetValue(hashCode, out item);");
 
-        Method init = new("""
-                          private static void Init()
-                          """);
+        Method init = new("private static void Init()");
         init.AddAttribute("[UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]");
         init.AddStatement("collection = new();");
 
