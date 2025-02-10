@@ -1,14 +1,16 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityExtended.Generator.Attributes;
+using UnityExtended.Generators.Attributes;
 
 namespace MyNamespace {
-    public interface ISome{}
-    
-    [HandleInput(typeof(MyInput.InteractionActions))]
+    [Collect]
+    [HandleInput(typeof(MyInput.InteractionActions), typeof(DragAndDropInput.DragAndDropActions))]
     public partial class Something : MonoBehavior {
-        partial void MyInput_InteractionActions_OnattackPerformed(InputAction.CallbackContext callbackContext) {
-            // do some
+        [GetComponent] private MonoBehavior mono, other, rb;
+
+        [SerializePropertyWithBacking]
+        private MonoBehavior M {
+            get => new();
         }
     }
 }
