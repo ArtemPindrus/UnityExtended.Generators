@@ -83,4 +83,9 @@ namespace EditorAttributes {
     public class FoldoutGroupAttribute : Attribute {
         public FoldoutGroupAttribute(string groupName, params string[] fields){}
     }
+
+    [AttributeUsage(AttributeTargets.Field)]
+    public class PropertyOrderAttribute : Attribute {
+        public PropertyOrderAttribute(int order) {}
+    }
 }
