@@ -14,6 +14,7 @@ namespace UnityExtended.Generator;
 [Generator]
 public class UnityGenerator : IIncrementalGenerator {
     public void Initialize(IncrementalGeneratorInitializationContext context) {
+        // TODO: go through classes instead
         GetComponentAttributeData.ClearCachedData();
         
         var getComponentProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
@@ -44,12 +45,12 @@ public class UnityGenerator : IIncrementalGenerator {
         context.RegisterSourceOutput(provider, Execute);
     }
     
-    private static void Execute(SourceProductionContext context, IEnumerable<IGenerate> requiredGeneratedData) {
+    private static void Execute(SourceProductionContext context, ImmutableArray<IGenerate> requiredGeneratedData) {
         var classes = GeneratorHelper.ExtractGeneratedClassesFromData(requiredGeneratedData);
 
         AddSecondMethodsIfNecessary(classes);
         
-        context.AddClassesToSource(classes);
+        context.AddSource(classes);
     }
     
     private static void AddSecondMethodsIfNecessary(IEnumerable<Class> classesToGenerate) {

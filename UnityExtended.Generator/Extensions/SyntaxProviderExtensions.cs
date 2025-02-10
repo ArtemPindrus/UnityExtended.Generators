@@ -7,40 +7,16 @@ using Microsoft.CodeAnalysis;
 namespace UnityExtended.Generator;
 
 public static class SyntaxProviderExtensions {
-    public static IncrementalValueProvider<IEnumerable<T>> ValuesCombine<T>(this IncrementalValueProvider<IEnumerable<T>> left,
-        IncrementalValueProvider<IEnumerable<T>> right) {
-        var provider = left.Combine(right).Select(Selector);
-
-        return provider;
-
-        IEnumerable<T> Selector((IEnumerable<T>, IEnumerable<T>) tuple, CancellationToken _) {
-            var (i1, i2) = tuple;
-
-            foreach (var t in i1) {
-                yield return t;
-            }
-
-            foreach (var t in i2) {
-                yield return t;
-            }
-        }
-    }
-
-    public static IncrementalValueProvider<IEnumerable<T>> ValuesCombine<T>(
+    public static IncrementalValueProvider<ImmutableArray<T>> ValuesCombine<T>(
         this IncrementalValueProvider<ImmutableArray<T>> left,
         IncrementalValueProvider<ImmutableArray<T>> right) {
-        return left.AsEnumerable().ValuesCombine(right.AsEnumerable());
-    }
-    
-    public static IncrementalValueProvider<IEnumerable<T>> ValuesCombine<T>(
-        this IncrementalValueProvider<IEnumerable<T>> left,
-        IncrementalValueProvider<ImmutableArray<T>> right) {
-        return left.ValuesCombine(right.AsEnumerable());
-    }
+        return left.Combine(right).Select(Selector);
 
-    public static IncrementalValueProvider<IEnumerable<T>> AsEnumerable<T>(
-        this IncrementalValueProvider<ImmutableArray<T>> provider) {
-        return provider.Select((x, _) => x.AsEnumerable());
+        ImmutableArray<T> Selector((ImmutableArray<T> Left, ImmutableArray<T> Right) tuple, CancellationToken cancellationToken) {
+            var (i1, i2) = tuple;
+
+            return i1.AddRange(i2);
+        }
     }
 
     public static IncrementalValuesProvider<T> WhereNotNullValues<T>(this IncrementalValuesProvider<T?> provider) {

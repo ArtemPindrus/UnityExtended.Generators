@@ -59,15 +59,15 @@ public static class GeneratorHelper {
         }
     }
     
-    public static IncrementalValueProvider<IEnumerable<T>> ValuesCombine<T>(
+    public static IncrementalValueProvider<ImmutableArray<T>> ValuesCombine<T>(
         params IncrementalValueProvider<ImmutableArray<T>>[] providers) {
         if (providers.Length == 0) return default;
-        if (providers.Length == 1) return providers[1].AsEnumerable();
+        if (providers.Length == 1) return providers[1];
 
-        var provider = providers[0].AsEnumerable();
+        var provider = providers[0];
         
         for (int i = 1; i < providers.Length; i++) {
-            provider = provider.ValuesCombine(providers[i].AsEnumerable());
+            provider = provider.ValuesCombine(providers[i]);
         }
 
         return provider;
