@@ -14,11 +14,6 @@ namespace UnityExtended.Generator;
 [Generator]
 public class UnityGenerator : IIncrementalGenerator {
     public void Initialize(IncrementalGeneratorInitializationContext context) {
-        context.RegisterPostInitializationOutput(ctx => {
-            ctx.AddSource($"{nameof(GeneratorHelper.Attributes)}.g.cs",
-                SourceText.From(GeneratorHelper.Attributes, Encoding.UTF8));
-        });
-
         var getComponentProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
             "UnityExtended.Generator.Attributes.GetComponentAttribute",
             static (_,_) => true, GetComponentAttributeData.TransformIntoIGenerate)

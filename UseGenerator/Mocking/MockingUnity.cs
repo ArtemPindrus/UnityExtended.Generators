@@ -35,3 +35,24 @@ namespace UnityEngine.InputSystem {
     
     public interface IInputActionCollection2 {}
 }
+
+namespace UnityExtended.Generators.Attributes {
+    [AttributeUsage(AttributeTargets.Field)]
+    public class GetComponentAttribute : Attribute {
+
+    }
+
+    [AttributeUsage(AttributeTargets.Class)]
+    public class HandleInputAttribute : Attribute {
+        public HandleInputAttribute(params Type[] inputActionsType) {
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Property)]
+    public class SerializePropertyWithBackingAttribute : Attribute {
+    }
+    
+    [AttributeUsage(AttributeTargets.Class)]
+    public class CollectAttribute : Attribute {
+    }
+}

@@ -1,28 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Threading;
+using Hierarchy;
+using Microsoft.CodeAnalysis;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace UnityExtended.Generator;
 
 public static class GeneratorHelper {
-    public const string Attributes = @"
-using System;
-
-namespace UnityExtended.Generator.Attributes {
-    [AttributeUsage(AttributeTargets.Field)]
-    public class GetComponentAttribute : Attribute {
-
-    }
-
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-    public class HandleInputAttribute : Attribute {
-        public HandleInputAttribute(Type inputActionsType) {
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class SerializePropertyWithBackingAttribute : Attribute {
-    }
-}
-";
+    public const string AttributesNamespace = "UnityExtended.Generators.Attributes";
 
     public const string AwakeMethodSignature = "private void Awake()";
     public const string Awake2MethodSignature = "partial void Awake2()";
