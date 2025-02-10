@@ -6,6 +6,8 @@ using Microsoft.CodeAnalysis;
 namespace UnityExtended.Generator;
 
 public readonly record struct CollectAttributeData : IGenerateClass {
+    public const string PreMethodName = "PreCollect";
+    
     public Class GeneratedClass { get; }
 
     private CollectAttributeData(ITypeSymbol classSymbol) {
@@ -13,6 +15,8 @@ public readonly record struct CollectAttributeData : IGenerateClass {
         string fqClassName = GeneratedClass.FullyQualifiedName;
 
         GeneratedClass.AddField($"private static System.Collections.Generic.Dictionary<int, {fqClassName}> collection;");
+
+        Method preMethod = new($"partial void {PreMethodName}()");
 
         Method tryGetByHashCode = new($"public static bool TryGetByHashCode(int hashCode, out {fqClassName} item)");
         tryGetByHashCode.AddStatement("return collection.TryGetValue(hashCode, out item);");
@@ -24,12 +28,13 @@ public readonly record struct CollectAttributeData : IGenerateClass {
         init.AddStatement("collection = new();");
 
         Method awake = new("private void Awake()");
+        awake.AddStatement($"{PreMethodName}();");
         awake.AddStatement("collection.Add(GetHashCode(), this);");
 
         Method onDestroy = new("private void OnDestroy()");
         onDestroy.AddStatement("collection.Remove(GetHashCode());");
         
-        GeneratedClass.AddMethods(tryGetByHashCode, init, awake, onDestroy);
+        GeneratedClass.AddMethods(tryGetByHashCode, init, awake, onDestroy, preMethod);
     }
 
     public static IGenerate TransformIntoIGenerate(GeneratorAttributeSyntaxContext context, CancellationToken _) {
