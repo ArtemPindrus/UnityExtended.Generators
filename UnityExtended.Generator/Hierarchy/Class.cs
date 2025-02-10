@@ -41,7 +41,12 @@ public class Class {
     }
 
     public void AddField(string field) {
-        fields.Add(field);
+        string[] separateFields = field.Split('\n');
+
+        foreach (var actualField in separateFields) {
+            fields.Add(actualField);
+        }
+    }
     }
 
     public void Merge(Class other) {
