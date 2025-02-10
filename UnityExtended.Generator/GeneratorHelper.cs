@@ -46,4 +46,14 @@ public static class GeneratorHelper {
         return classesToGenerate.Values;
     }
 
+    public static void AddClassesToSource(this SourceProductionContext context, IEnumerable<Class> classesToGenerate) {
+        foreach (var classToGenerate in classesToGenerate) {
+            IndentedStringBuilder stringBuilder = new();
+
+            classToGenerate.AppendTo(stringBuilder);
+            
+            context.AddSource($"{classToGenerate.FullyQualifiedName}.g.cs", stringBuilder.ToString());
+        }
+    }
+    
 }
