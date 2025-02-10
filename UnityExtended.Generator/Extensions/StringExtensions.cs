@@ -9,4 +9,27 @@ public static class StringExtensions {
 
         return new string(chars);
     }
+    
+    public static (string? namespaceName, string className) SeparateFromFullyQualifiedName(this string fullyQualifiedClassName) {
+        int dotInd = fullyQualifiedClassName.LastIndexOf('.');
+
+        if (dotInd != -1) {
+            string namespaceName = fullyQualifiedClassName.Substring(0, dotInd);
+            string className = fullyQualifiedClassName.Substring(dotInd + 1);
+
+            return (namespaceName, className);
+        }
+        else {
+            string? namespaceName = null;
+            string className = fullyQualifiedClassName;
+            
+            return (namespaceName, className);
+        }
+    }
+
+    public static string ExtractConcreteClassName(this string fullyQualifiedClassName) {
+        int dotInd = fullyQualifiedClassName.LastIndexOf('.');
+
+        return dotInd != -1 ? fullyQualifiedClassName.Substring(dotInd + 1) : fullyQualifiedClassName;
+    }
 }

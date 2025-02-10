@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 
-namespace UnityExtended.Generator;
+namespace Hierarchy;
 
 internal static class GeneratorExtensions {
     public static bool Implements(this ClassDeclarationSyntax classDeclarationSyntax, SemanticModel semanticModel, string fullyQualifiedName) {
@@ -44,28 +44,5 @@ internal static class GeneratorExtensions {
                 yield return propertyDeclarationSyntax;
             }
         }
-    }
-
-    public static (string? namespaceName, string className) SeparateFromFullyQualifiedName(this string fullyQualifiedClassName) {
-        int dotInd = fullyQualifiedClassName.LastIndexOf('.');
-
-        if (dotInd != -1) {
-            string namespaceName = fullyQualifiedClassName.Substring(0, dotInd);
-            string className = fullyQualifiedClassName.Substring(dotInd + 1);
-
-            return (namespaceName, className);
-        }
-        else {
-            string? namespaceName = null;
-            string className = fullyQualifiedClassName;
-            
-            return (namespaceName, className);
-        }
-    }
-
-    public static string ExtractConcreteClassName(this string fullyQualifiedClassName) {
-        int dotInd = fullyQualifiedClassName.LastIndexOf('.');
-
-        return dotInd != -1 ? fullyQualifiedClassName.Substring(dotInd + 1) : fullyQualifiedClassName;
     }
 }
