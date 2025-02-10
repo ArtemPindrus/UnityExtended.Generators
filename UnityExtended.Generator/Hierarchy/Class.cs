@@ -47,6 +47,11 @@ public class Class {
             fields.Add(actualField);
         }
     }
+
+    public void AddField(params string[] fields) {
+        foreach (var field in fields) {
+            AddField(field);
+        }
     }
 
     public void Merge(Class other) {
