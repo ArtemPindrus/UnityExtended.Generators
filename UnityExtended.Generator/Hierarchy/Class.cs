@@ -52,7 +52,7 @@ public class Class {
         }
 
         foreach (var otherField in other.fields) {
-            if (!fields.Contains(otherField)) fields.Add(otherField);
+            fields.Add(otherField);
         }
     }
 
