@@ -26,8 +26,11 @@ public static class GeneratorHelper {
     
     public const string OnDestroyMethodSignature = "private void OnDestroy()";
     public const string OnDestroy2MethodSignature = "partial void OnDestroy2()";
+    public const string CreateInspectorGUISignature = "public override VisualElement CreateInspectorGUI()";
 
     public static readonly string[] InputActionPostfixes = ["Performed", "Started", "Canceled"];
+
+    public const string UnityEditorConstraint = "#if UNITY_EDITOR";
     
     public static IEnumerable<Class> ExtractGeneratedClassesFromData(IEnumerable<IGenerate> requiredGeneratedData) {
         Dictionary<string, Class> classesToGenerate = new();
