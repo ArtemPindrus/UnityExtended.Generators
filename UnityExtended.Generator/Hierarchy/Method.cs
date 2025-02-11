@@ -13,7 +13,9 @@ public class Method {
     }
 
     public void AddStatement(string statement) {
-        Statements.Add(statement);
+        string[] statements = statement.Split('\n');
+        
+        Statements.AddRange(statements);
     }
 
     public void AddAttribute(string attribute) {
