@@ -67,7 +67,7 @@ namespace UnityExtended.Generators.Attributes {
 
     [AttributeUsage(AttributeTargets.Field)]
     public class StartFoldoutGroupAttribute : Attribute {
-        public StartFoldoutGroupAttribute(string groupName){}
+        public StartFoldoutGroupAttribute(string groupName, int propertyOrder = -1){}
     }
     
     [AttributeUsage(AttributeTargets.Field)]

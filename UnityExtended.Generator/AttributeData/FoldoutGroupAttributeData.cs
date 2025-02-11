@@ -11,7 +11,7 @@ namespace UnityExtended.Generator;
 public class FoldoutGroupAttributeData : IGenerateClass {
     public Class GeneratedClass { get; }
 
-    public FoldoutGroupAttributeData(INamedTypeSymbol classSymbol, string groupName, params string[] fieldNames) {
+    public FoldoutGroupAttributeData(INamedTypeSymbol classSymbol, string groupName, int? propertyOrder, params string[] fieldNames) {
         GeneratedClass = new Class(classSymbol.ToDisplayString());
 
         string fieldsParam = "";
@@ -23,8 +23,13 @@ public class FoldoutGroupAttributeData : IGenerateClass {
             else fieldsParam += $"nameof({name}), ";
         }
 
+        GeneratedClass.AddField("[UnityEngine.SerializeField]");
+
+        if (propertyOrder is { } value) {
+            GeneratedClass.AddField($"[EditorAttributes.PropertyOrder({propertyOrder})]");
+        }
+        
         GeneratedClass.AddField($"""
-                                 [UnityEngine.SerializeField]
                                  [EditorAttributes.FoldoutGroup("{groupName}", {fieldsParam})]
                                  private EditorAttributes.Void {groupName.ToLowerFirst()}Group;
                                  """);
@@ -49,9 +54,17 @@ public class FoldoutGroupAttributeData : IGenerateClass {
         }
 
         var attributeSyntax = (AttributeSyntax)context.Attributes[0].ApplicationSyntaxReference.GetSyntax();
-        var argument = (LiteralExpressionSyntax)attributeSyntax.ArgumentList.Arguments[0].Expression;
-        var name = argument.Token.ValueText;
+        var arguments = attributeSyntax.ArgumentList.Arguments;
+        
+        var groupNameExpression = (LiteralExpressionSyntax)arguments[0].Expression;
+        var groupName = groupNameExpression.Token.ValueText;
 
-        return new FoldoutGroupAttributeData(classSymbol, name, includedFields.Select(x => x.Name).ToArray());
+        int? order = null;
+        if (arguments.Count == 2) {
+            var orderExpression = (LiteralExpressionSyntax)arguments[1].Expression;
+            order = int.Parse(orderExpression.Token.ValueText);
+        }
+
+        return new FoldoutGroupAttributeData(classSymbol, groupName, order,includedFields.Select(x => x.Name).ToArray());
     }
 }
