@@ -7,11 +7,18 @@ using UnityExtended.Generator;
 namespace Hierarchy;
 
 public class Class {
-    private List<Method> methods = [];
-    private List<string> fields = [];
+    private readonly List<Method> methods = [];
+    private readonly List<string> fields = [];
+    private readonly HashSet<string> implementations = [];
+    private readonly List<string> attributes = [];
 
+    public readonly HashSet<string> Constraints = [];
+    public readonly HashSet<string> Usings = [];
+    
     public IEnumerable<Method> Methods => methods;
     public IEnumerable<string> Fields => fields;
+    public IEnumerable<string> Implementations => implementations;
+    public IEnumerable<string> Attributes => attributes;
     
     public string FullyQualifiedName { get; }
     
@@ -21,6 +28,14 @@ public class Class {
     public Class(string fullyQualifiedName) {
         FullyQualifiedName = fullyQualifiedName;
         (NamespaceName, Name) = FullyQualifiedName.SeparateFromFullyQualifiedName();
+    }
+
+    public void AddImplementation(string implementation) {
+        implementations.Add(implementation);
+    }
+    
+    public void AddAttribute(string attribute) {
+        attributes.Add(attribute);
     }
     
     public void AddMethod(Method method) {
@@ -34,8 +49,8 @@ public class Class {
         }
     }
 
-    public void AddMethods(params Method[] methods) {
-        foreach (var method in methods) {
+    public void AddMethods(params Method[] addedMethods) {
+        foreach (var method in addedMethods) {
             AddMethod(method);
         }
     }
@@ -48,9 +63,15 @@ public class Class {
         }
     }
 
-    public void AddField(params string[] fields) {
-        foreach (var field in fields) {
+    public void AddField(params string[] addedFields) {
+        foreach (var field in addedFields) {
             AddField(field);
+        }
+    }
+
+    public void AddUsing(params string[] usings) {
+        foreach (var u in usings) {
+            Usings.Add(u);
         }
     }
 
@@ -67,12 +88,39 @@ public class Class {
     }
 
     public void AppendTo(IndentedStringBuilder stringBuilder) {
+        // write usings
+        foreach (var usingStatement in Usings) {
+            stringBuilder.AppendLine($"using {usingStatement};");
+        }
+
+        stringBuilder.AppendLine();
+        
         // open Namespace
         if (NamespaceName is { } namespaceName)
             stringBuilder.AppendLine($"namespace {namespaceName} {{").IncrementIndent();
+        
+        // write constraints
+        foreach (var con in Constraints) {
+            stringBuilder.AppendLine(con);
+        }
 
+        // write attributes
+        foreach (var attribute in attributes) {
+            stringBuilder.AppendLine(attribute);
+        }
+        
         // open Class
-        stringBuilder.AppendLine($"partial class {Name} {{").IncrementIndent();
+        stringBuilder.Append($"partial class {Name} ");
+
+        if (implementations.Count > 0) {
+            stringBuilder.Append(": ");
+            
+            foreach (var implementation in implementations) {
+                stringBuilder.Append(implementation);
+            }
+        }
+
+        stringBuilder.AppendLine("{").IncrementIndent();
 
         //// fields
         foreach (var fieldDeclaration in Fields) {
@@ -105,8 +153,25 @@ public class Class {
         stringBuilder.DecrementIndent().AppendLine("}"); 
         // close Class
 
+        string closing = "";
+
+        for (int i = 0; i < Constraints.Count; i++) {
+            closing += "#endif\n";
+        }
+        
+        stringBuilder.AppendLine(closing);
+        // close constraints
+        
+
         if (NamespaceName is not null)
             stringBuilder.DecrementIndent().AppendLine("}");
         // close Namespace
+    }
+
+    public override string ToString() {
+        IndentedStringBuilder builder = new();
+        AppendTo(builder);
+
+        return builder.ToString();
     }
 }
