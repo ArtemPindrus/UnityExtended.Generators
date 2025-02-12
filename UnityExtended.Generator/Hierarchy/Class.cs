@@ -68,6 +68,12 @@ public class Class {
             AddField(field);
         }
     }
+    
+    public void AddUsing(string @using) {
+        string[] usings = @using.Split('\n');
+        
+        AddUsing(usings);
+    }
 
     public void AddUsing(params string[] usings) {
         foreach (var u in usings) {
