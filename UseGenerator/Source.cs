@@ -1,25 +1,21 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 using UnityExtended.Generators.Attributes;
 
 namespace MyNamespace {
     [Collect]
     [HandleInput(typeof(MyInput.InteractionActions), typeof(DragAndDropInput.DragAndDropActions))]
     public partial class Something : MonoBehavior {
-        private object o;
-        
-        [StartFoldoutGroup("MyStuff")]
-        [GetComponent] private MonoBehavior mono;
+        [field: Display]
+        private TargetAngles TargetAngles { get; set; }
 
-        private MonoBehavior other;
-
-        [EndFoldoutGroup] private MonoBehavior some;
-        
-        private object s;
+        [Display]
+        private float x;
 
         [SerializePropertyWithBacking]
         private MonoBehavior M {
-            get => m;
+            get => new();
             set => throw new NotSupportedException();
         }
     }
