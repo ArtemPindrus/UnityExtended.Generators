@@ -1,3 +1,4 @@
+using System;
 using UnityEngine.UIElements;
 
 namespace UnityEngine {
@@ -16,6 +17,13 @@ namespace UnityEngine {
     
     public class MonoBehavior {
         protected T GetComponent<T>() => throw new NotSupportedException();
+        protected T GetComponents<T>() => throw new NotSupportedException();
+        
+        protected T GetComponentInParent<T>() => throw new NotSupportedException();
+        protected T GetComponentsInParent<T>() => throw new NotSupportedException();
+
+        protected T GetComponentInChildren<T>() => throw new NotSupportedException();
+        protected T GetComponentsInChildren<T>() => throw new NotSupportedException();
     }
     
     public class SerializeFieldAttribute : Attribute {}
@@ -199,6 +207,10 @@ namespace UnityExtended.Core.Drawers {
     }
 }
 
+namespace UnityExtended.Core.EditorTools.Extensions {
+    public static class VisualElementExtensions {
+        public static void AddAllSerializedProperties(this VisualElement container, object serializedObject) {
+        }
     }
 }
 
@@ -214,15 +226,4 @@ namespace EditorAttributes {
     public class PropertyOrderAttribute : Attribute {
         public PropertyOrderAttribute(int order) {}
     }
-}
-
-[DisplayItem(typeof(Foldout), "NeckX", "NeckY")]
-public class TargetAngles {
-    private float neckX;
-    
-    public float NeckX {
-        get => neckX;
-    }
-    
-    public float NeckY { get; }
 }
