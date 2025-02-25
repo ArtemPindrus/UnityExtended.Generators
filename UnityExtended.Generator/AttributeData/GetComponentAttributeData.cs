@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -8,7 +9,13 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace UnityExtended.Generator;
 
 public class GetComponentAttributeData : IGenerateClass {
-    public record struct GetComponentInstance(ITypeSymbol Type, string VariableName);
+    private enum In {
+        Self,
+        Children,
+        Parent
+    }
+    
+    private record struct GetComponentInstance(ITypeSymbol Type, string VariableName, In InParam, bool Plural);
 
     public const string PreSignatureName = "PreGetComponent";
     private static List<ITypeSymbol> generatedClasses = new();
@@ -25,8 +32,16 @@ public class GetComponentAttributeData : IGenerateClass {
         Method pre = new Method($"partial void {PreSignatureName}()");
 
         foreach (var instance in getComponentInstances) {
-            string typeName = instance.Type.ToDisplayString();
-            awake.AddStatement($"{instance.VariableName} = GetComponent<{typeName}>();");
+            string typeName = instance.Type.ToDisplayString().Replace("[]", "");
+            string postfix = instance.Plural ? "s" : "";
+            postfix += instance.InParam switch {
+                In.Self => "",
+                In.Children => "InChildren",
+                In.Parent => "InParent",
+                _ => throw new ArgumentException()
+            };
+            
+            awake.AddStatement($"{instance.VariableName} = GetComponent{postfix}<{typeName}>();");
         }
         
         GeneratedClass.AddMethods(awake, pre);
@@ -47,7 +62,10 @@ public class GetComponentAttributeData : IGenerateClass {
             if (field.GetAttributes()
                     .FirstOrDefault(x => SymbolEqualityComparer.Default.Equals(x.AttributeClass, attributeClass)) is
                 { } attributeData) {
-                instances.Add(new(field.Type, field.Name));
+                attributeData.GetParamValueAt(0, out In inParam);
+                attributeData.GetParamValueAt(1, out bool plural);
+                
+                instances.Add(new(field.Type, field.Name, inParam, plural));
             }
         }
 
