@@ -94,6 +94,11 @@ public class Class {
     }
 
     public void AppendTo(IndentedStringBuilder stringBuilder) {
+        // write constraints
+        foreach (var con in Constraints) {
+            stringBuilder.AppendLine(con);
+        }
+        
         // write usings
         foreach (var usingStatement in Usings) {
             stringBuilder.AppendLine($"using {usingStatement};");
@@ -104,11 +109,6 @@ public class Class {
         // open Namespace
         if (NamespaceName is { } namespaceName)
             stringBuilder.AppendLine($"namespace {namespaceName} {{").IncrementIndent();
-        
-        // write constraints
-        foreach (var con in Constraints) {
-            stringBuilder.AppendLine(con);
-        }
 
         // write attributes
         foreach (var attribute in attributes) {
@@ -159,6 +159,10 @@ public class Class {
         stringBuilder.DecrementIndent().AppendLine("}"); 
         // close Class
 
+        if (NamespaceName is not null)
+            stringBuilder.DecrementIndent().AppendLine("}");
+        // close Namespace
+        
         string closing = "";
 
         for (int i = 0; i < Constraints.Count; i++) {
@@ -167,11 +171,6 @@ public class Class {
         
         stringBuilder.AppendLine(closing);
         // close constraints
-        
-
-        if (NamespaceName is not null)
-            stringBuilder.DecrementIndent().AppendLine("}");
-        // close Namespace
     }
 
     public override string ToString() {
