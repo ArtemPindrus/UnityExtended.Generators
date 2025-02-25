@@ -1,5 +1,4 @@
 using UnityEngine.UIElements;
-using UnityExtended.Generators.Attributes;
 
 namespace UnityEngine {
     public static class Application {
@@ -186,42 +185,20 @@ namespace UnityExtended.Core.Extensions {
     }
 }
 
-namespace UnityExtended.Generators.Attributes {
-    [AttributeUsage(AttributeTargets.Field)]
-    public class GetComponentAttribute : Attribute {
-
-    }
-
-    [AttributeUsage(AttributeTargets.Class)]
-    public class HandleInputAttribute : Attribute {
-        public HandleInputAttribute(params Type[] inputActionsType) {
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class SerializePropertyWithBackingAttribute : Attribute {
-    }
-    
-    [AttributeUsage(AttributeTargets.Class)]
-    public class CollectAttribute : Attribute {
-    }
-
-    [AttributeUsage(AttributeTargets.Field)]
-    public class StartFoldoutGroupAttribute : Attribute {
-        public StartFoldoutGroupAttribute(string groupName, int propertyOrder = -1){}
-    }
-    
-    [AttributeUsage(AttributeTargets.Field)]
-    public class EndFoldoutGroupAttribute : Attribute {
+namespace UnityExtended.Core.Attributes {
+    // TODO: create Generator for this
+    [AttributeUsage(AttributeTargets.Method)]
+    public class ButtonAttribute : Attribute {
         
     }
-    
-    [AttributeUsage(AttributeTargets.Field)]
-    public class DisplayAttribute : Attribute{}
+}
 
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    public class DisplayItemAttribute : Attribute {
-        public DisplayItemAttribute(Type containerType, params string[] fieldsAndProperties){}
+namespace UnityExtended.Core.Drawers {
+    public static class ButtonDrawer {
+        public static VisualElement DrawButtons(object target) => throw new NotSupportedException();
+    }
+}
+
     }
 }
 
