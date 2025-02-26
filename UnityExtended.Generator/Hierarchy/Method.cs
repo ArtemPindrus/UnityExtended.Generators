@@ -12,6 +12,10 @@ public class Method {
         Signature = signature;
     }
 
+    public void InsertStatement(string statement, int index) {
+        Statements.Insert(index, statement);
+    }
+
     public void AddStatement(string statement) {
         string[] statements = statement.Split('\n');
         
