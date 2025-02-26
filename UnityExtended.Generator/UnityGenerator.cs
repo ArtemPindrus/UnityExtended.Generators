@@ -57,6 +57,7 @@ public class UnityGenerator : IIncrementalGenerator {
             .Collect();
 
         var provider = GeneratorHelper.ValuesCombine(getComponentProvider, 
+            getComponentAheadProvider,
             handleInputProvider, 
             collectProvider, 
             serializePropertyProvider, 
