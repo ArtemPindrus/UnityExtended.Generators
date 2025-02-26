@@ -15,14 +15,19 @@ namespace UnityExtended.Generator;
 [Generator]
 public class UnityGenerator : IIncrementalGenerator {
     public void Initialize(IncrementalGeneratorInitializationContext context) {
-        // TODO: go through classes instead
-        GetComponentAttributeData.ClearCachedData();
-        
         var getComponentProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
                 $"{GeneratorHelper.AttributesNamespace}.GetComponentAttribute",
-                static (_,_) => true, GetComponentAttributeData.TransformIntoIGenerate)
+                static (_,_) => true, GetComponentAttributeData.Transform)
             .WhereNotNullValues()
-            .Collect();
+            .Collect()
+            .Select((x, _) => GetComponentAttributeData.Assemble(x));
+        
+        var getComponentAheadProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
+                $"{GeneratorHelper.AttributesNamespace}.GetComponentAheadAttribute",
+                static (_,_) => true, GetComponentAheadAttributeData.Transform)
+            .WhereNotNullValues()
+            .Collect()
+            .Select((x, _) => GetComponentAheadAttributeData.Assemble(x));
         
         var handleInputProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
                 $"{GeneratorHelper.AttributesNamespace}.HandleInputAttribute",

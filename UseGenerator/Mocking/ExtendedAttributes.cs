@@ -1,15 +1,20 @@
 using System;
 
 namespace UnityExtended.Generators.Attributes {
+    public enum In {
+        Self,
+        Children,
+        Parent,
+    }
+    
     [AttributeUsage(AttributeTargets.Field)]
     public class GetComponentAttribute : Attribute {
-        public enum In {
-            Self,
-            Children,
-            Parent,
-        }
-        
         public GetComponentAttribute(In @in = In.Self, bool plural = false){}
+    }
+    
+    [AttributeUsage(AttributeTargets.Field)]
+    public class GetComponentAheadAttribute : Attribute {
+        public GetComponentAheadAttribute(In @in = In.Self, bool plural = false){}
     }
 
     [AttributeUsage(AttributeTargets.Class)]
