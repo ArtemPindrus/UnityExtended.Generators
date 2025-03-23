@@ -1,22 +1,25 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
-using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using UnityExtended.Generator;
 
 namespace Hierarchy;
 
-public class Class {
-    private readonly List<Method> methods = [];
-    private readonly List<string> fields = [];
-    private readonly HashSet<string> implementations = [];
-    private readonly List<string> attributes = [];
-
+public class Class : HierarchyMember {
     public readonly HashSet<string> Constraints = [];
     public readonly HashSet<string> Usings = [];
     
-    public IEnumerable<Method> Methods => methods;
-    public IEnumerable<string> Fields => fields;
+    private readonly Dictionary<string,Method> methods = [];
+    private readonly HashSet<string> fields = [];
+    private readonly HashSet<string> implementations = [];
+    private readonly List<string> attributes = [];
+    
+    /// <summary>
+    /// Methods hashed by their signature.
+    /// </summary>
+    public ReadOnlyDictionary<string, Method> Methods { get; }
+    public IReadOnlyCollection<string> Fields => fields;
     public IEnumerable<string> Implementations => implementations;
     public IEnumerable<string> Attributes => attributes;
     
@@ -25,9 +28,12 @@ public class Class {
     public string? NamespaceName { get; }
     public string Name { get; }
 
-    public Class(string fullyQualifiedName) {
+    protected Class(string fullyQualifiedName) {
         FullyQualifiedName = fullyQualifiedName;
         (NamespaceName, Name) = FullyQualifiedName.SeparateFromFullyQualifiedName();
+        
+        Methods = new ReadOnlyDictionary<string, Method>(methods);
+    }
     }
 
     public void AddImplementation(string implementation) {
