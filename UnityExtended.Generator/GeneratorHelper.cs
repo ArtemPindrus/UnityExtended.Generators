@@ -10,8 +10,6 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 namespace UnityExtended.Generator;
 
 public static class GeneratorHelper {
-    public const string AttributesNamespace = "UnityExtended.Generators.Attributes";
-
     public const string AwakeMethodSignature = "private void Awake()";
     public const string Awake2MethodSignature = "partial void Awake2()";
     
