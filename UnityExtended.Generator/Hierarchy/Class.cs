@@ -7,6 +7,7 @@ using UnityExtended.Generator;
 namespace Hierarchy;
 
 public class Class : HierarchyMember {
+    public const string FinishReservationID = "FinishRes";
     
     private static Dictionary<string, Class> FQNameToClass = new();
     
@@ -75,6 +76,18 @@ public class Class : HierarchyMember {
         FQNameToClass.Add(c.FullyQualifiedName, c);
     }
 
+    public virtual Class Finish() {
+        if (methods.TryGetValue(GeneratorHelper.AwakeMethodSignature, out var awakeMethod)) {
+            if (!awakeMethod.GetOrCreateReservation(FinishReservationID, out var awake)) {
+                awake.AddStatement("Awake2();");
+            } 
+        }
+
+        return this;
+    }
+
+    public void AddConstraint(string constraint) {
+        Constraints.Add(constraint);
     }
 
     public void AddImplementation(string implementation) {
