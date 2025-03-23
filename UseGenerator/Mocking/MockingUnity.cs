@@ -1,6 +1,8 @@
 using System;
 using UnityEngine.UIElements;
 
+#pragma warning disable
+
 namespace UnityEngine {
     public static class Application {
         public static bool isPlaying = false;
@@ -25,6 +27,10 @@ namespace UnityEngine {
         protected T GetComponentInChildren<T>() => throw new NotSupportedException();
         protected T GetComponentsInChildren<T>() => throw new NotSupportedException();
     }
+    
+    public class Rigidbody : MonoBehavior {}
+    
+    public class Image {}
     
     public class SerializeFieldAttribute : Attribute {}
 
