@@ -78,8 +78,13 @@ public class Class : HierarchyMember {
 
     public virtual Class Finish() {
         if (methods.TryGetValue(GeneratorHelper.AwakeMethodSignature, out var awakeMethod)) {
-            if (!awakeMethod.GetOrCreateReservation(FinishReservationID, out var awake)) {
-                awake.AddStatement("Awake2();");
+            if (!awakeMethod.GetOrCreateReservation(FinishReservationID, out var awakeRes)) {
+                awakeRes.AddStatement("Awake2();");
+            } 
+        }
+        if (methods.TryGetValue(GeneratorHelper.OnValidateMethodSignature, out var validateMethod)) {
+            if (!validateMethod.GetOrCreateReservation(FinishReservationID, out var validateRes)) {
+                validateRes.AddStatement("OnValidate2();");
             } 
         }
 
