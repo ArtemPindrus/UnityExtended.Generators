@@ -1,3 +1,4 @@
+using System;
 using Hierarchy;
 using UnityExtended.Generator.FillerData;
 
@@ -29,6 +30,7 @@ public class GetComponentFiller : IClassFiller<GetComponentFillerData> {
     private string InToPostfix(In inValue) => inValue switch {
         In.Self => "",
         In.Children => "InChildren",
-        In.Parent => "InParent"
+        In.Parent => "InParent",
+        _ => throw new NotSupportedException()
     };
 }
