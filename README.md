@@ -48,12 +48,15 @@ Code:
 ```csharp
 namespace MyNamespace {
     public partial class MyClass : MonoBehavior {
+        [SerializeField] // required here!
         [GetComponentAhead(In.Children, true)]
         private Rigidbody rb;
 
+        [SerializeField]
         [GetComponentAhead(In.Parent)]
         private Image image;
-        
+
+        [SerializeField]
         [GetComponentAhead]
         private float s;
     }
