@@ -26,10 +26,10 @@ public static class ClassContextFactory {
 
         if (fieldSymbol == null) return null;
 
-        var filler = new GetComponentFiller();
-        var data = new GetComponentFillerData(fqClassName, fieldSymbol, context.Attributes[0]);
+        var filler = new GetComponentAheadFiller();
+        var data = new GetComponentAheadFillerData(fqClassName, fieldSymbol, context.Attributes[0]);
 
-        Class c = Class.GetOrCreate(data.FullyQualifiedTypeName);
+        Class c = Class.GetOrCreate(data.FullyQualifiedGeneratedClassName);
 
         return filler.Fill(c, data);
     }

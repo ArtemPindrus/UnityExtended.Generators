@@ -20,9 +20,18 @@ public class UnityGenerator : IIncrementalGenerator {
         var getComponentProvider = context.SyntaxProvider.ForAttributeWithMetadataName(AttributesHelper.GetComponentAttribute,
             predicate: static (_, _) => true,
             transform: ClassContextFactory.GetComponentFiller)
+            .WhereNotNullValues()
             .Collect();
         
-        context.RegisterSourceOutput(getComponentProvider, Execute);
+        var getComponentAheadProvider = context.SyntaxProvider.ForAttributeWithMetadataName(AttributesHelper.GetComponentAheadAttribute,
+                predicate: static (_, _) => true,
+                transform: ClassContextFactory.GetComponentAheadFiller)
+            .WhereNotNullValues()
+            .Collect();
+
+        var provider = getComponentProvider.ValuesCombine(getComponentAheadProvider);
+        
+        context.RegisterSourceOutput(provider, Execute);
     }
     
     private static void Execute(SourceProductionContext context, ImmutableArray<Class> classes) {
