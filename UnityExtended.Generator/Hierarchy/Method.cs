@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Hierarchy;
 
@@ -69,6 +72,36 @@ public class Method : HierarchyMember {
         }
     }
 
+    public override void AppendTo(IndentedStringBuilder sb) {
+        foreach (var attribute in Attributes) {
+            sb.AppendLine(attribute);
         }
+
+        if (Signature.Contains("partial ")) {
+            sb.AppendLine($"{Signature};");
+        } else {
+            sb.AppendLine($"{Signature} {{");
+
+            sb.IncrementIndent();
+            MainReservation.AppendTo(sb);
+
+            if (reservationsByID != null) sb.AppendLine();
+
+            var lastRes = ReservationsByID.Values.Last();
+            foreach (var reservation in reservationsByID.Values) {
+                reservation.AppendTo(sb);
+
+                if (reservation != lastRes) sb.AppendLine();
+            }
+
+            sb.DecrementIndent().AppendLine("}");
+        }
+    }
+
+    public override string ToString() {
+        IndentedStringBuilder sb = new();
+        AppendTo(sb);
+
+        return sb.ToString();
     }
 }
