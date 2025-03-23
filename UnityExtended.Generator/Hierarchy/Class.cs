@@ -128,15 +128,7 @@ public class Class : HierarchyMember {
         }
     }
 
-    public void Merge(Class other) {
-        foreach (var otherMethod in other.methods) {
-            if (methods.FirstOrDefault(x => x.Signature == otherMethod.Signature) is { } existing) {
-                existing.Merge(otherMethod);
-            } else methods.Add(otherMethod);
-        }
-
-        foreach (var otherField in other.fields) {
-            fields.Add(otherField);
+            Usings.Add(u.Trim());
         }
     }
 
