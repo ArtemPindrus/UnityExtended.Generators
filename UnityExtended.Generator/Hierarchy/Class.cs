@@ -102,32 +102,32 @@ public class Class : HierarchyMember {
         return m;
     }
 
-    public void AddField(string field) {
-        string[] separateFields = field.Split('\n');
+    public Class AddFields(string fields) {
+        string[] separateFields = fields.Split('\n');
 
-        foreach (var actualField in separateFields) {
-            fields.Add(actualField);
+        foreach (var field in separateFields) {
+            this.fields.Add(field.Trim());
         }
+
+        return this;
     }
 
-    public void AddField(params string[] addedFields) {
+    public Class AddFields(params string[] addedFields) {
         foreach (var field in addedFields) {
-            AddField(field);
+            AddFields(field.Trim());
         }
+        
+        return this;
     }
     
-    public void AddUsing(string @using) {
-        string[] usings = @using.Split('\n');
+    public void AddUsings(string usings) {
+        string[] usingsSeparated = usings.Split('\n');
         
-        AddUsing(usings);
+        AddUsings(usingsSeparated);
     }
 
-    public void AddUsing(params string[] usings) {
+    public void AddUsings(params string[] usings) {
         foreach (var u in usings) {
-            Usings.Add(u);
-        }
-    }
-
             Usings.Add(u.Trim());
         }
     }
