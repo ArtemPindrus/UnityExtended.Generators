@@ -7,6 +7,9 @@ using UnityExtended.Generator;
 namespace Hierarchy;
 
 public class Class : HierarchyMember {
+    
+    private static Dictionary<string, Class> FQNameToClass = new();
+    
     public readonly HashSet<string> Constraints = [];
     public readonly HashSet<string> Usings = [];
     
@@ -24,7 +27,6 @@ public class Class : HierarchyMember {
     public IEnumerable<string> Attributes => attributes;
     
     public string FullyQualifiedName { get; }
-    
     public string? NamespaceName { get; }
     public string Name { get; }
 
@@ -34,6 +36,45 @@ public class Class : HierarchyMember {
         
         Methods = new ReadOnlyDictionary<string, Method>(methods);
     }
+
+    /// <summary>
+    /// Gets cached Class or creates one and caches.
+    /// </summary>
+    /// <returns>true - got cached class. false - created new.</returns>
+    public static bool GetOrCreate(string fullyQualifiedName, out Class c) {
+        if (!GetCachedClass(fullyQualifiedName, out c)) {
+            c = new Class(fullyQualifiedName);
+            CacheClass(c);
+            return false;
+        }
+
+        return true;
+    }
+    
+    /// <summary>
+    /// Gets cached Class or creates one and caches.
+    /// </summary>
+    public static Class GetOrCreate(string fullyQualifiedName) {
+        GetOrCreate(fullyQualifiedName, out var c);
+
+        return c;
+    }
+
+    public static void ClearStaticState() {
+        FQNameToClass.Clear();
+    }
+
+    protected static bool GetCachedClass(string fullyQualifiedName, out Class c) {
+        if (FQNameToClass.TryGetValue(fullyQualifiedName, out c)) return true;
+
+        return false;
+    }
+
+    protected static void CacheClass(Class c) {
+        // TODO: cache instead of merging
+        FQNameToClass.Add(c.FullyQualifiedName, c);
+    }
+
     }
 
     public void AddImplementation(string implementation) {
