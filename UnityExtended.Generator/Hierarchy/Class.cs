@@ -140,7 +140,7 @@ public class Class : HierarchyMember {
         }
     }
 
-    public void AppendTo(IndentedStringBuilder stringBuilder) {
+    public override void AppendTo(IndentedStringBuilder stringBuilder) {
         // write constraints
         foreach (var con in Constraints) {
             stringBuilder.AppendLine(con);
@@ -151,7 +151,7 @@ public class Class : HierarchyMember {
             stringBuilder.AppendLine($"using {usingStatement};");
         }
 
-        stringBuilder.AppendLine();
+        if (Usings.Any()) stringBuilder.AppendLine();
         
         // open Namespace
         if (NamespaceName is { } namespaceName)
@@ -180,30 +180,17 @@ public class Class : HierarchyMember {
             stringBuilder.AppendLine(fieldDeclaration);
         }
 
-        stringBuilder.AppendLine();
+        if (Fields.Any()) stringBuilder.AppendLine();
 
         //// methods
-        foreach (var method in methods) {
-            foreach (var attribute in method.Attributes) {
-                stringBuilder.AppendLine(attribute);
-            }
-            
-            if (method.Signature.Contains("partial")) {
-                stringBuilder.AppendLine($"{method.Signature};").AppendLine();
-            }
-            else {
-                string methodSignature = method.Signature;
-                stringBuilder.AppendLine($"{methodSignature} {{").IncrementIndent();
-                
-                foreach (var statement in method.Statements) {
-                    stringBuilder.AppendLine(statement);
-                }
+        var lastMethod = methods.Values.Last();
+        foreach (var method in methods.Values) {
+            method.AppendTo(stringBuilder);
 
-                stringBuilder.DecrementIndent().AppendLine("}").AppendLine();
-            }
+            if (method != lastMethod) stringBuilder.AppendLine();
         }
 
-        stringBuilder.DecrementIndent().AppendLine("}"); 
+        stringBuilder.DecrementIndent().AppendLine("}");
         // close Class
 
         if (NamespaceName is not null)
