@@ -84,22 +84,22 @@ public class Class : HierarchyMember {
     public void AddAttribute(string attribute) {
         attributes.Add(attribute);
     }
-    
-    public void AddMethod(Method method) {
-        Method? existing = methods.FirstOrDefault(x => x.Signature == method.Signature);
 
-        if (existing != null) {
-            existing.Merge(method);
+    public bool GetOrCreateMethod(string signature, out Method m) {
+        if (!methods.TryGetValue(signature, out m)) {
+            m = new(signature);
+            methods[signature] = m;
+            
+            return false;
         }
-        else {
-            methods.Add(method);
-        }
+
+        return true;
     }
 
-    public void AddMethods(params Method[] addedMethods) {
-        foreach (var method in addedMethods) {
-            AddMethod(method);
-        }
+    public Method GetOrCreateMethod(string signature) {
+        GetOrCreateMethod(signature, out var m);
+
+        return m;
     }
 
     public void AddField(string field) {
