@@ -4,10 +4,10 @@ Code:
 ```csharp
 namespace MyNamespace {
     public partial class MyClass : MonoBehavior {
-        [GetComponent]
+        [GetComponent(In.Children, true)]
         private Rigidbody rb;
 
-        [GetComponent]
+        [GetComponent(In.Parent)]
         private Image image;
         
         [GetComponent]
@@ -26,8 +26,8 @@ namespace MyNamespace {
             // Reservation GetComponentRes
             PreGetComponent();
             s = GetComponent<float>();
-            image = GetComponent<UnityEngine.Image>();
-            rb = GetComponent<UnityEngine.Rigidbody>();
+            image = GetComponentInParent<UnityEngine.Image>();
+            rb = GetComponentsInChildren<UnityEngine.Rigidbody>();
             PostGetComponent();
 
             // Reservation FinishRes
