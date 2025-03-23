@@ -21,16 +21,9 @@ public class GetComponentFiller : IClassFiller<GetComponentFillerData> {
         }
 
         string pluralPostfix = data.Plural ? "s" : "";
-        string inPostfix = InToPostfix(data.In);
+        string inPostfix = data.In.ToPostfix();
         awakeReservation.InsertStatement($"{data.FieldName} = GetComponent{pluralPostfix}{inPostfix}<{data.FullyQualifiedTypeName}>();", 1);
 
         return c;
     }
-
-    private string InToPostfix(In inValue) => inValue switch {
-        In.Self => "",
-        In.Children => "InChildren",
-        In.Parent => "InParent",
-        _ => throw new NotSupportedException()
-    };
 }
