@@ -5,7 +5,7 @@ using UnityExtended.Generators.Hierarchy;
 namespace UnityExtended.Generators.ClassFillers;
 
 public class HandleInputFiller : IClassFiller<HandleInputFillerData> {
-    private string ReservationsID = "HandleInputRes";
+    private const string ReservationsID = "HandleInputRes";
     
     public Class Fill(Class c, HandleInputFillerData data) {
         var inputAsset = data.InputAsset;
