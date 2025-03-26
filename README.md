@@ -21,8 +21,6 @@ Generation:
 namespace MyNamespace {
     partial class MyClass {
         private void Awake() {
-            // Reservation Main
-
             // Reservation GetComponentRes
             PreGetComponent();
             s = GetComponent<float>();
@@ -68,8 +66,6 @@ Generation:
 namespace MyNamespace {
     partial class MyClass {
         private void OnValidate() {
-            // Reservation Main
-
             // Reservation GetComponentAheadRes
             PreGetComponentAhead();
             UnityEditor.EditorApplication.delayCall += ()=> {
@@ -88,6 +84,78 @@ namespace MyNamespace {
         partial void PreGetComponentAhead();
 
         partial void PostGetComponentAhead();
+    }
+}
+```
+
+## [HandleInputAttribute](https://github.com/ArtemPindrus/UnityExtended.Core/blob/main/Generators/Attributes/HandleInputAttribute.cs)
+Code:
+```csharp
+namespace UnityExtended.Generators.Sample;
+
+[HandleInput(typeof(MyInput))]
+public partial class Test : MonoBehavior {
+    partial void OnAttackPerformed(InputAction.CallbackContext callbackContext) {
+        // do shit!
+    }
+
+    partial void OnAttackStarted(InputAction.CallbackContext callbackContext) {
+        // start shit!
+    }
+
+    partial void OnAttackCanceled(InputAction.CallbackContext callbackContext) {
+        // cancel shit!
+    }
+}
+```
+
+Generation:
+```csharp
+namespace UnityExtended.Generators.Sample {
+    partial class Test {
+        private UnityEngine.InputSystem.MyInput MyInput;
+        private UnityEngine.InputSystem.MyInput.InteractionActions InteractionActions;
+
+        private void Awake() {
+            MyInput = InputSingletonsManager.GetInstance<UnityEngine.InputSystem.MyInput>();
+            InteractionActions = MyInput.Interaction;
+
+            Awake2();
+        }
+
+        private void OnEnable() {
+            InteractionActions.Attack.started += OnAttackStarted;
+            InteractionActions.Attack.performed += OnAttackPerformed;
+            InteractionActions.Attack.canceled += OnAttackCanceled;
+
+            OnEnable2();
+        }
+
+        private void OnDisable() {
+            InteractionActions.Attack.started -= OnAttackStarted;
+            InteractionActions.Attack.performed -= OnAttackPerformed;
+            InteractionActions.Attack.canceled -= OnAttackCanceled;
+
+            OnDisable2();
+        }
+
+        partial void Awake2();
+
+        partial void OnEnable2();
+
+        partial void OnDisable2();
+
+        partial void OnAttackStarted(InputAction.CallbackContext callbackContext);
+
+        partial void OnAttackPerformed(InputAction.CallbackContext callbackContext);
+
+        partial void OnAttackCanceled(InputAction.CallbackContext callbackContext);
+
+        partial void OnInteractStarted(InputAction.CallbackContext callbackContext);
+
+        partial void OnInteractPerformed(InputAction.CallbackContext callbackContext);
+
+        partial void OnInteractCanceled(InputAction.CallbackContext callbackContext);
     }
 }
 ```
