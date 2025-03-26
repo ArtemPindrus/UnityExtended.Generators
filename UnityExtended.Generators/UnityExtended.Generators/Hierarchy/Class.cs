@@ -210,11 +210,15 @@ public class Class : HierarchyMember {
         if (Fields.Any()) stringBuilder.AppendLine();
 
         //// methods
-        var lastMethod = methods.Values.Last();
-        foreach (var method in methods.Values) {
+        var orderedMethods = methods.Values
+            .OrderBy(x => x.Signature.StartsWith("partial") ? 1 : 0)
+            .ToArray();
+        
+        for (var i = 0; i < orderedMethods.Length; i++) {
+            var method = orderedMethods[i];
             method.AppendTo(stringBuilder);
 
-            if (method != lastMethod) stringBuilder.AppendLine();
+            if (i != orderedMethods.Length - 1) stringBuilder.AppendLine();
         }
 
         stringBuilder.DecrementIndent().AppendLine("}");
