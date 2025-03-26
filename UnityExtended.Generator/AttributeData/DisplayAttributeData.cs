@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
@@ -6,79 +7,106 @@ using Hierarchy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using UnityExtended.Generator.Extensions;
+using UnityExtended.Generator.Helpers;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 
 namespace UnityExtended.Generator;
 
 public class DisplayAttributeData : IGenerateClass {
-    private const string Usings = """
-                                  UnityEngine
-                                  UnityEngine.UIElements
-                                  System
-                                  System.Reflection
-                                  UnityExtended.Core.Extensions
-                                  """;
+    private readonly string baseClassName;
     
-    private readonly string targetFieldName;
-    private readonly Method createGUI, update;
-    
-    public Class GeneratedClass { get; }
+    public CustomEditorClass CustomEditorClass { get; }
+    public Class GeneratedClass => CustomEditorClass;
 
-    public DisplayAttributeData(INamedTypeSymbol classSymbol, IFieldSymbol[] fields, Compilation compilation) {
-        string classFQName = classSymbol.ToDisplayString();
-        var (namespaceName, className) = classFQName.SeparateFromFullyQualifiedName();
-        targetFieldName = className.ToLowerFirst();
-        
-        GeneratedClass = new Class(classFQName + "Inspector");
-        GeneratedClass.AddImplementation("UnityEditor.Editor");
-        GeneratedClass.AddAttribute($"[UnityEditor.CustomEditor(typeof({classFQName})), UnityEditor.CanEditMultipleObjects]");
-        GeneratedClass.AddField($"private {classFQName} {targetFieldName};");
-        GeneratedClass.Constraints.Add(GeneratorHelper.UnityEditorConstraint);
-        GeneratedClass.AddUsing(Usings);
+    public DisplayAttributeData(INamedTypeSymbol classSymbol, IFieldSymbol displayFieldSymbol) {
+        baseClassName = classSymbol.ToDisplayString();
+        CustomEditorClass = CustomEditorClass.GetFor(baseClassName);
 
-        createGUI = new Method(GeneratorHelper.CreateInspectorGUISignature);
-        update = new("private void Update()");
-        Method modifyRoot = new("partial void ModifyRoot(ref VisualElement root)");
-        Method update2 = new("partial void Update2()");
-        
-        GeneratedClass.AddMethods(createGUI, update, update2, modifyRoot);
-        
-        createGUI.AddStatement($"""
-                               {targetFieldName} = ({classFQName})target;
-                               var root = new VisualElement();
-                               """);
-        
-        update.AddStatement("if (!Application.isPlaying) return;\n");
-
-        foreach (var field in fields) {
-            var fieldType = field.Type;
-
-            if (fieldType.Name == "Single") {
-                GenerateDataForAField(field, "root", classFQName);
-            }
-            else if (fieldType
-                         .GetAttributes()
-                         .FirstOrDefault(x => x.AttributeClass.ToDisplayString() == $"{GeneratorHelper.AttributesNamespace}.DisplayItemAttribute") 
-                     is {} displayItemAttribute) {
-                GenerateDataForADisplayItem(displayItemAttribute, field, compilation, classFQName);
-            }
-        }
-        
-        createGUI.AddStatement("""
-                                // Add others
-                                root.AddAllSerializedProperties(serializedObject);
-                                
-                                root.schedule.Execute(Update).Every(50);
-                                
-                                ModifyRoot(ref root);
-                                
-                                return root;
-                                """);
-        
-        update.AddStatement("Update2();");
+        var visualElementForField = CreateVisualElementForField(displayFieldSymbol);
+        CustomEditorClass.AddVisualElementToRoot(visualElementForField);
     }
 
+    /// <summary>
+    /// Creates VisualElement that should display value of <paramref name="displayFieldSymbol"/>.
+    /// </summary>
+    /// <param name="displayFieldSymbol">Field that should be displayed.</param>
+    /// <returns></returns>
+    private VisualElementField CreateVisualElementForField(IFieldSymbol displayFieldSymbol, string? inspectorFieldPrefix = null) {
+        var displayFieldType = displayFieldSymbol.Type;
+        var displayFieldName = displayFieldSymbol.Name;
+        var inspectorVisualElementFieldName = inspectorFieldPrefix + displayFieldName.NormalizeBackingFieldName();
+            
+        int order = FindOrderOfDisplayField(displayFieldSymbol);
+        
+        if (displayFieldType.GetAttribute($"{AttributesHelper.AttributesNamespace}.DisplayItemAttribute",
+                out var displayItemAttribute)) {
+            displayItemAttribute.GetParamValueAt(0, out INamedTypeSymbol? containerType);
+
+            VisualElementField container = new(inspectorVisualElementFieldName, displayFieldType.ToDisplayString(), order, $"""
+                 label = "{inspectorVisualElementFieldName}",
+                 enabledSelf = false
+                 """);
+
+            var fieldsWithDisplay = displayFieldType.GetMembers()
+                .Where(x => x.Kind == SymbolKind.Field && x.GetAttribute($"{AttributesHelper.AttributesNamespace}.DisplayAttribute", out var _));
+
+            foreach (IFieldSymbol f in fieldsWithDisplay) {
+                var child = CreateVisualElementForField(f, $"{container.FieldName}_");
+                container.AddChild(child);
+            }
+            
+            return container;
+        }
+        else {
+            VisualElementField ve = new(inspectorVisualElementFieldName, displayFieldType.ToDisplayString(), order, $"""
+                 label = "{inspectorVisualElementFieldName}",
+                 enabledSelf = false
+                 """);
+            
+            GenerateInspectorFieldUpdaters(displayFieldSymbol);
+
+            return ve;
+        }
+    }
+
+    private int FindOrderOfDisplayField(IFieldSymbol displayFieldSymbol) {
+        int order = 0;
+        
+        if (displayFieldSymbol.GetAttribute($"{AttributesHelper.AttributesNamespace}.SetVisualElementAt",
+                out var setVisualElementAtAttribute)) {
+            if (setVisualElementAtAttribute.GetParamValueAt(0, out int foundOrder)) order = foundOrder;
+        }
+
+        return order;
+    }
+
+    private void GenerateInspectorFieldUpdaters(IFieldSymbol displayFieldSymbol) {
+        var displayFieldName = displayFieldSymbol.Name;
+        
+        bool isNotAccessible = displayFieldSymbol.DeclaredAccessibility != Accessibility.Public &&
+                               displayFieldSymbol.DeclaredAccessibility != Accessibility.Internal;
+        
+        if (isNotAccessible) {
+            string reflectionFieldName = $"{displayFieldName}Field";
+
+            GeneratedClass.AddFields($"private FieldInfo {reflectionFieldName};");
+            CustomEditorClass
+                .AddCreateGUIStatements($"{reflectionFieldName} = typeof({baseClassName}).GetField(\"{displayFieldName}\", BindingFlags.NonPublic | BindingFlags.Instance);")
+                .AddUpdateStatements($"{displayFieldName}.value = ({displayFieldSymbol.Type.ToDisplayString()}){reflectionFieldName}.GetValue(targetCasted);");
+        }
+        else {
+            CustomEditorClass.AddUpdateStatements($"{displayFieldName}.value = targetCasted.{displayFieldName};");
+        }
+    }
+    
+    
+    
+
     private void GenerateDataForADisplayItem(AttributeData displayItemAttribute, IFieldSymbol field, Compilation compilation, string originalClassName) {
+        // TODO: return later
+        return;
+        
         if (displayItemAttribute.ApplicationSyntaxReference == null) return;
 
         var displayFieldName = field.Name.NormalizeBackingFieldName();
@@ -99,7 +127,7 @@ public class DisplayAttributeData : IGenerateClass {
         
         var containerVarName = $"{displayFieldName}{containerTypeSymbol.Name}";
                 
-        createGUI.AddStatement($$"""
+        CustomEditorClass.AddCreateGUIStatements($$"""
                                  var {{containerVarName}} = new {{containerTypeSymbol.ToDisplayString()}} {
                                      text = "{{displayFieldName}}"
                                  };
@@ -116,41 +144,39 @@ public class DisplayAttributeData : IGenerateClass {
                 var foundMember = membersAtPath.First();
                         
                 if (foundMember is IFieldSymbol foundField) GenerateDataForAField(foundField, containerVarName, originalClassName);
-                if (foundMember is IPropertySymbol propertySymbol) GenerateDataForAPropertyGetter(propertySymbol, containerVarName, $"{targetFieldName}.{displayFieldName}");
+                if (foundMember is IPropertySymbol propertySymbol) GenerateDataForAPropertyGetter(propertySymbol, containerVarName, $"targetCasted.{displayFieldName}");
             }
         }
-        
-        createGUI.AddStatement($"""
-                               
-                               root.Add({containerVarName});
-                               """);
     }
 
     private void GenerateDataForAField(IFieldSymbol field, string containerName, string originalClassName) {
         var fieldName = field.Name;
         var displayFieldName = fieldName.NormalizeBackingFieldName();
 
-        string? controlName = TypeToControlName(field.Type);
+        // find order
+        var setVisualElementAtAttribute = field.GetAttributes().FirstOrDefault(x =>
+            x.AttributeClass is { Name: $"{AttributesHelper.AttributesNamespace}.SetVisualElementAt" });
+
+        int order = -1;
+        if (setVisualElementAtAttribute != null) {
+            if (setVisualElementAtAttribute.GetParamValueAt(0, out int foundOrder)) order = foundOrder;
+        }
         
-        if (controlName == null) return;
-        
-        CreateControl(controlName, displayFieldName, containerName);
+        //
+        CreateControl(field.Type, displayFieldName, containerName, order);
 
         bool isNotAccessible = field.DeclaredAccessibility != Accessibility.Public &&
                                field.DeclaredAccessibility != Accessibility.Internal;
         if (isNotAccessible) {
             string reflectionFieldName = $"{displayFieldName}Field";
 
-            GeneratedClass.AddField($"private FieldInfo {reflectionFieldName};");
-            createGUI.AddStatement(
-                $"{reflectionFieldName} = typeof({originalClassName}).GetField(\"{fieldName}\", BindingFlags.NonPublic | BindingFlags.Instance);");
-
-
-            update.AddStatement(
-                $"{displayFieldName}.value = ({field.Type.Name}){reflectionFieldName}.GetValue({targetFieldName});");
+            GeneratedClass.AddFields($"private FieldInfo {reflectionFieldName};");
+            CustomEditorClass
+                .AddCreateGUIStatements($"{reflectionFieldName} = typeof({originalClassName}).GetField(\"{fieldName}\", BindingFlags.NonPublic | BindingFlags.Instance);")
+                .AddUpdateStatements($"{displayFieldName}.value = ({field.Type.Name}){reflectionFieldName}.GetValue(targetCasted);");
         }
         else {
-            update.AddStatement($"{displayFieldName}.value = {targetFieldName}.{displayFieldName};");
+            CustomEditorClass.AddUpdateStatements($"{displayFieldName}.value = targetCasted.{displayFieldName};");
         }
     }
 
@@ -158,52 +184,35 @@ public class DisplayAttributeData : IGenerateClass {
         string classFQName = GeneratedClass.FullyQualifiedName;
         var propertyName = propertySymbol.Name;
         
-        string? controlName = TypeToControlName(propertySymbol.Type);
-
-        CreateControl(controlName, propertyName, containerName);
+        CreateControl(propertySymbol.Type, propertyName, containerName);
         
-        update.AddStatement($"{propertyName}.value = {updateValuePath}.{propertyName};");
+        CustomEditorClass.AddUpdateStatements($"{propertyName}.value = {updateValuePath}.{propertyName};");
     }
 
-    private void CreateControl(string controlName, string generatedFieldName, string containerName) {
-        GeneratedClass.AddField($"private {controlName} {generatedFieldName};");
-
-        // TODO: interpolation with raw literal
-        createGUI.AddStatement($$"""
-                                 {{generatedFieldName}} = new {{controlName}}() {
-                                    label = "{{generatedFieldName}}",
-                                    enabledSelf = false
-                                 };
-
-                                 {{containerName}}.Add({{generatedFieldName}});
-                                 """);
+    private void CreateControl(ITypeSymbol fieldType, string fieldName, string containerName, int order = -1) {
+        string controlTypeName = FieldTypeToControlType(fieldType);
+        
+        VisualElementField visualElementField = new(fieldName, controlTypeName, order, $"""
+                                                                          label = "{fieldName}",
+                                                                          enabledSelf = false
+                                                                          """);
+        
+        //CustomEditorClass.AddVisualElementToRoot(visualElement, containerName);
     }
 
-    private string? TypeToControlName(ITypeSymbol type) {
+    private string? FieldTypeToControlType(ITypeSymbol type) {
         var typeName = type.Name;
 
         if (typeName == "Single") return "FloatField";
         else return null;
     }
 
-    public static IGenerate? Transform(GeneratorSyntaxContext context, CancellationToken _) {
-        var semanticModel = context.SemanticModel;
-        var classDeclaration = (ClassDeclarationSyntax)context.Node;
+    public static IGenerate? Transform(GeneratorAttributeSyntaxContext context, CancellationToken _) {
+        var classSymbol = context.TargetSymbol.ContainingType;
+        var fieldSymbol = (IFieldSymbol)context.TargetSymbol;
 
-        var classSymbol = (INamedTypeSymbol)ModelExtensions.GetDeclaredSymbol(semanticModel, classDeclaration);
+        if (classSymbol.GetAttribute($"{AttributesHelper.AttributesNamespace}.DisplayItemAttribute", out var _)) return null;
 
-        var fields = classSymbol.GetMembers().Where(x => x.Kind == SymbolKind.Field).Select(x => (IFieldSymbol)x);
-        List<IFieldSymbol> validFields = new();
-
-        foreach (var field in fields) {
-            if (field.GetAttributes().Any(x =>
-                    x.AttributeClass.ToDisplayString() == $"{GeneratorHelper.AttributesNamespace}.DisplayAttribute")) {
-                validFields.Add(field);
-            }
-        }
-
-        if (validFields.Count == 0) return null;
-
-        return new DisplayAttributeData(classSymbol, validFields.ToArray(), semanticModel.Compilation);
+        return new DisplayAttributeData(classSymbol, fieldSymbol);
     }
 }

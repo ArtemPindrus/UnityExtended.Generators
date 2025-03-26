@@ -11,28 +11,28 @@ public readonly record struct CollectAttributeData : IGenerateClass {
     public Class GeneratedClass { get; }
 
     private CollectAttributeData(ITypeSymbol classSymbol) {
-        GeneratedClass = new Class(classSymbol.ToDisplayString());
-        string fqClassName = GeneratedClass.FullyQualifiedName;
-
-        GeneratedClass.AddField($"private static System.Collections.Generic.Dictionary<int, {fqClassName}> collection;");
-
-        Method preMethod = new($"partial void {PreMethodName}()");
-
-        Method tryGetByHashCode = new($"public static bool TryGetByHashCode(int hashCode, out {fqClassName} item)");
-        tryGetByHashCode.AddStatement("return collection.TryGetValue(hashCode, out item);");
-
-        Method init = new("private static void Init()");
-        init.AddAttribute("[UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]");
-        init.AddStatement("collection = new();");
-
-        Method awake = new("private void Awake()");
-        awake.AddStatement($"{PreMethodName}();");
-        awake.AddStatement("collection.Add(GetHashCode(), this);");
-
-        Method onDestroy = new("private void OnDestroy()");
-        onDestroy.AddStatement("collection.Remove(GetHashCode());");
+        string fqClassName = classSymbol.ToDisplayString();
         
-        GeneratedClass.AddMethods(tryGetByHashCode, init, awake, onDestroy, preMethod);
+        GeneratedClass = Class.GetOrCreate(fqClassName)
+            .AddFields($"private static System.Collections.Generic.Dictionary<int, {fqClassName}> collection;");
+
+        GeneratedClass.GetOrCreateMethod($"public static bool TryGetByHashCode(int hashCode, out {fqClassName} item)")
+            .AddStatements("return collection.TryGetValue(hashCode, out item);");
+        
+        GeneratedClass.GetOrCreateMethod("private static void Init()")
+            .AddAttribute("[UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]")
+            .AddStatements("collection = new();");
+        
+        GeneratedClass.GetOrCreateMethod("private void Awake()")
+            .AddStatements($"""
+                            {PreMethodName}();
+                            collection.Add(GetHashCode(), this);
+                            """);
+
+        GeneratedClass.GetOrCreateMethod("private void OnDestroy()")
+            .AddStatements("collection.Remove(GetHashCode());");
+
+        GeneratedClass.GetOrCreateMethod($"partial void {PreMethodName}()");
     }
 
     public static IGenerate TransformIntoIGenerate(GeneratorAttributeSyntaxContext context, CancellationToken _) {

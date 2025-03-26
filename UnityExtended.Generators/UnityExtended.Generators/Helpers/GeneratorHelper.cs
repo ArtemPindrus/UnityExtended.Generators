@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Threading;
-using Hierarchy;
 using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using UnityExtended.Generators.Extensions;
+using UnityExtended.Generators.Hierarchy;
 
-namespace UnityExtended.Generator;
+namespace UnityExtended.Generators.Helpers;
 
 public static class GeneratorHelper {
     public const string AwakeMethodSignature = "private void Awake()";
@@ -30,32 +29,34 @@ public static class GeneratorHelper {
 
     public static readonly string[] InputActionPostfixes = ["Performed", "Started", "Canceled"];
 
-    public static IEnumerable<Class> ExtractGeneratedClassesFromData(IEnumerable<IGenerate> requiredGeneratedData) {
-        Dictionary<string, Class> classesToGenerate = new();
-        
-        // foreach (var generateData in requiredGeneratedData) {
-        //     if (generateData is IGenerateClass classGenerator) {
-        //         Class generatedClass = classGenerator.GeneratedClass;
-        //         
-        //         if (classesToGenerate.TryGetValue(generatedClass.FullyQualifiedName,
-        //                 out Class existing)) {
-        //             if (generatedClass is CustomEditorClass customEditorClass
-        //                 && existing is CustomEditorClass existingCustomEditorClass) {
-        //                 existingCustomEditorClass.Merge(customEditorClass);
-        //             } else existing.Merge(generatedClass);
-        //         }
-        //         else {
-        //             classesToGenerate.Add(generatedClass.FullyQualifiedName, generatedClass);
-        //         }
-        //     }
-        // }
+    public static bool TruePredicate(SyntaxNode sn, CancellationToken ct) => true;
 
-        foreach (var customEditorClasses in classesToGenerate.Values.OfType<CustomEditorClass>()) {
-            customEditorClasses.Build();
-        }
-
-        return classesToGenerate.Values;
-    }
+    // public static IEnumerable<Class> ExtractGeneratedClassesFromData(IEnumerable<IGenerate> requiredGeneratedData) {
+    //     Dictionary<string, Class> classesToGenerate = new();
+    //     
+    //     // foreach (var generateData in requiredGeneratedData) {
+    //     //     if (generateData is IGenerateClass classGenerator) {
+    //     //         Class generatedClass = classGenerator.GeneratedClass;
+    //     //         
+    //     //         if (classesToGenerate.TryGetValue(generatedClass.FullyQualifiedName,
+    //     //                 out Class existing)) {
+    //     //             if (generatedClass is CustomEditorClass customEditorClass
+    //     //                 && existing is CustomEditorClass existingCustomEditorClass) {
+    //     //                 existingCustomEditorClass.Merge(customEditorClass);
+    //     //             } else existing.Merge(generatedClass);
+    //     //         }
+    //     //         else {
+    //     //             classesToGenerate.Add(generatedClass.FullyQualifiedName, generatedClass);
+    //     //         }
+    //     //     }
+    //     // }
+    //
+    //     foreach (var customEditorClasses in classesToGenerate.Values.OfType<CustomEditorClass>()) {
+    //         customEditorClasses.Build();
+    //     }
+    //
+    //     return classesToGenerate.Values;
+    // }
 
     public static void AddSource(this SourceProductionContext context, IEnumerable<Class> classesToGenerate) {
         foreach (var classToGenerate in classesToGenerate) {

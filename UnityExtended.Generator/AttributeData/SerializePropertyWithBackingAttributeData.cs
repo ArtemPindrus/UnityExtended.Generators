@@ -10,9 +10,10 @@ public readonly record struct SerializePropertyWithBackingAttributeData : IGener
     public Class GeneratedClass { get; }
 
     private SerializePropertyWithBackingAttributeData(SemanticModel semanticModel, ITypeSymbol classSymbol, PropertyDeclarationSyntax propertyDeclarationSyntax) {
-        GeneratedClass = new(classSymbol.ToDisplayString());
+        Class.GetOrCreate(classSymbol.ToDisplayString(), out var c);
+        GeneratedClass = c;
 
-        Method onValidate = new(GeneratorHelper.OnValidateMethodSignature);
+        Method onValidate = GeneratedClass.GetOrCreateMethod(GeneratorHelper.OnValidateMethodSignature);
 
         var type = propertyDeclarationSyntax.Type;
         var typeSymbol = semanticModel.GetSymbolInfo(type).Symbol;
@@ -21,10 +22,8 @@ public readonly record struct SerializePropertyWithBackingAttributeData : IGener
         var identifier = propertyDeclarationSyntax.Identifier.ValueText;
         var fieldName = identifier.ToLowerFirst();
         
-        GeneratedClass.AddField($"[UnityEngine.SerializeField] private {typeName} {fieldName};");
-        onValidate.AddStatement($"{identifier} = {fieldName};");
-        
-        GeneratedClass.AddMethod(onValidate);
+        GeneratedClass.AddFields($"[UnityEngine.SerializeField] private {typeName} {fieldName};");
+        onValidate.AddStatements($"{identifier} = {fieldName};");
     }
 
     public static IGenerate TransformIntoIGenerate(GeneratorAttributeSyntaxContext context, CancellationToken _) {

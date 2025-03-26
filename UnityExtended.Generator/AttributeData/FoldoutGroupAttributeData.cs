@@ -12,7 +12,7 @@ public class FoldoutGroupAttributeData : IGenerateClass {
     public Class GeneratedClass { get; }
 
     public FoldoutGroupAttributeData(INamedTypeSymbol classSymbol, string groupName, int? propertyOrder, params string[] fieldNames) {
-        GeneratedClass = new Class(classSymbol.ToDisplayString());
+        GeneratedClass = Class.GetOrCreate(classSymbol.ToDisplayString());
 
         string fieldsParam = "";
 
@@ -23,13 +23,13 @@ public class FoldoutGroupAttributeData : IGenerateClass {
             else fieldsParam += $"nameof({name}), ";
         }
 
-        GeneratedClass.AddField("[UnityEngine.SerializeField]");
+        GeneratedClass.AddFields("[UnityEngine.SerializeField]");
 
         if (propertyOrder is { } value) {
-            GeneratedClass.AddField($"[EditorAttributes.PropertyOrder({propertyOrder})]");
+            GeneratedClass.AddFields($"[EditorAttributes.PropertyOrder({propertyOrder})]");
         }
         
-        GeneratedClass.AddField($"""
+        GeneratedClass.AddFields($"""
                                  [EditorAttributes.FoldoutGroup("{groupName}", {fieldsParam})]
                                  private EditorAttributes.Void {groupName.ToLowerFirst()}Group;
                                  """);
