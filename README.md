@@ -22,6 +22,9 @@ The only obtrusive generator is the [HookGenerator](https://github.com/ArtemPind
 Most generators are unobtrusive. Their functions get tightly integrated by HookGenerator that targets [GeneratorHook].
 
 # Attributes
+## MonoBehaviourAttribute
+// TODO
+
 ## [GetComponentAttribute](https://github.com/ArtemPindrus/UnityExtended.Core/blob/main/Generators/Attributes/GetComponentAttribute.cs)
 Code:
 ```csharp
