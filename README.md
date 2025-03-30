@@ -1,3 +1,22 @@
+# Design
+## Blocked methods
+Source generated method with engine-specific name (Awake, Start, OnEnable, OnDisable, etc...).
+
+For every blocked method generator should create a partial continuation method (for Awake > Awake2, for Start > Start2, etc...) that the blocked method calls at the very end.
+
+## Continuation method
+Source generated partial method without definition that will be called at the end of a blocked method.
+
+Can be defined by user to continue blocked method.
+
+## Unobtrusive generators
+Generators that add methods with generator-specific naming.
+Those methods can be manually invoked by user. Otherwise classes should be decorated with [GeneratorHook].
+
+## Obtrusive generators
+Generators that create [Blocked methods](#blocked-methods)
+The only obtrusive generator is the [HookGenerator](https://github.com/ArtemPindrus/UnityExtended.Generators/blob/main/UnityExtended.Generators/UnityExtended.Generators/Generators/HookGenerator.cs).
+
 # Attributes
 ## [GetComponentAttribute](https://github.com/ArtemPindrus/UnityExtended.Core/blob/main/Generators/Attributes/GetComponentAttribute.cs)
 Code:
