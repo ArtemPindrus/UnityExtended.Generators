@@ -1,4 +1,4 @@
-# Design
+# Terms
 ## Blocked methods
 Source generated method with engine-specific name (Awake, Start, OnEnable, OnDisable, etc...).
 
@@ -17,6 +17,9 @@ Those methods can be manually invoked by user. Otherwise classes should be decor
 Generators that create [Blocked methods](#blocked-methods).
 
 The only obtrusive generator is the [HookGenerator](https://github.com/ArtemPindrus/UnityExtended.Generators/blob/main/UnityExtended.Generators/UnityExtended.Generators/Generators/HookGenerator.cs).
+
+# Design
+Most generators are unobtrusive. Their functions get tightly integrated by HookGenerator that targets [GeneratorHook].
 
 # Attributes
 ## [GetComponentAttribute](https://github.com/ArtemPindrus/UnityExtended.Core/blob/main/Generators/Attributes/GetComponentAttribute.cs)
