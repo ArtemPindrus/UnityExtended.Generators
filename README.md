@@ -14,7 +14,8 @@ Generators that add methods with generator-specific naming.
 Those methods can be manually invoked by user. Otherwise classes should be decorated with [GeneratorHook].
 
 ## Obtrusive generators
-Generators that create [Blocked methods](#blocked-methods)
+Generators that create [Blocked methods](#blocked-methods).
+
 The only obtrusive generator is the [HookGenerator](https://github.com/ArtemPindrus/UnityExtended.Generators/blob/main/UnityExtended.Generators/UnityExtended.Generators/Generators/HookGenerator.cs).
 
 # Attributes
