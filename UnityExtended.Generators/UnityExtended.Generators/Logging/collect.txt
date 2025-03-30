@@ -1,0 +1,9 @@
+[+] Generated Log File this file contains log messages from the source generator
+
+Logging started at 2025-03-30 17:19:43.626
+
+Generating for UnityExtended.Generators.Sample.Here.
+Generating for UnityExtended.Generators.Sample.Here.
+Generating for UnityExtended.Generators.Sample.Here.
+Generating for UnityExtended.Generators.Sample.Here.
+Generating for UnityExtended.Generators.Sample.Here.

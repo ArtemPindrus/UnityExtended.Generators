@@ -9,54 +9,39 @@ using UnityExtended.Generators.Hierarchy;
 namespace UnityExtended.Generators.Helpers;
 
 public static class GeneratorHelper {
-    public const string AwakeMethodSignature = "private void Awake()";
+    public const string GenerationPostfix = "_Generated";
+    
+    public const string AwakeMethodSignature = "protected void Awake()";
     public const string Awake2MethodSignature = "partial void Awake2()";
     
-    public const string OnEnableMethodSignature = "private void OnEnable()";
+    public const string StartMethodSignature = "protected void Start()";
+    public const string Start2MethodSignature = "partial void Start2()";
+    
+    public const string OnEnableMethodSignature = "protected void OnEnable()";
     public const string OnEnable2MethodSignature = "partial void OnEnable2()";
     
-    public const string OnDisableMethodSignature = "private void OnDisable()";
+    public const string OnDisableMethodSignature = "protected void OnDisable()";
     public const string OnDisable2MethodSignature = "partial void OnDisable2()";
 
-    public const string OnValidateMethodSignature = "private void OnValidate()";
+    public const string OnValidateMethodSignature = "protected void OnValidate()";
     public const string OnValidate2MethodSignature = "partial void OnValidate2()";
     
-    public const string OnDestroyMethodSignature = "private void OnDestroy()";
+    public const string OnDestroyMethodSignature = "protected void OnDestroy()";
     public const string OnDestroy2MethodSignature = "partial void OnDestroy2()";
 
-    public const string UpdateSignature = "private void Update()";
+    public const string UpdateSignature = "protected void Update()";
     public const string Update2Signature = "partial void Update2()";
+    
+    public const string CreateInspectorGUISignature = "public override VisualElement CreateInspectorGUI()";
 
+    
     public static readonly string[] InputActionPostfixes = ["Performed", "Started", "Canceled"];
 
     public static bool TruePredicate(SyntaxNode sn, CancellationToken ct) => true;
 
-    // public static IEnumerable<Class> ExtractGeneratedClassesFromData(IEnumerable<IGenerate> requiredGeneratedData) {
-    //     Dictionary<string, Class> classesToGenerate = new();
-    //     
-    //     // foreach (var generateData in requiredGeneratedData) {
-    //     //     if (generateData is IGenerateClass classGenerator) {
-    //     //         Class generatedClass = classGenerator.GeneratedClass;
-    //     //         
-    //     //         if (classesToGenerate.TryGetValue(generatedClass.FullyQualifiedName,
-    //     //                 out Class existing)) {
-    //     //             if (generatedClass is CustomEditorClass customEditorClass
-    //     //                 && existing is CustomEditorClass existingCustomEditorClass) {
-    //     //                 existingCustomEditorClass.Merge(customEditorClass);
-    //     //             } else existing.Merge(generatedClass);
-    //     //         }
-    //     //         else {
-    //     //             classesToGenerate.Add(generatedClass.FullyQualifiedName, generatedClass);
-    //     //         }
-    //     //     }
-    //     // }
-    //
-    //     foreach (var customEditorClasses in classesToGenerate.Values.OfType<CustomEditorClass>()) {
-    //         customEditorClasses.Build();
-    //     }
-    //
-    //     return classesToGenerate.Values;
-    // }
+    public static void AddSource(this SourceProductionContext context, Class c, string fileNamePostfix) {
+        context.AddSource($"{c.FullyQualifiedName}_{fileNamePostfix}.cs", c.ToString());
+    }
 
     public static void AddSource(this SourceProductionContext context, IEnumerable<Class> classesToGenerate) {
         foreach (var classToGenerate in classesToGenerate) {

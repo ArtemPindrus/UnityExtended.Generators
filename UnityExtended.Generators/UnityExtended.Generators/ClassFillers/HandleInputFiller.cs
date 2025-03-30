@@ -4,37 +4,32 @@ using UnityExtended.Generators.Hierarchy;
 
 namespace UnityExtended.Generators.ClassFillers;
 
-public class HandleInputFiller : IClassFiller<HandleInputFillerData> {
-    private const string ReservationsID = "HandleInputRes";
+public class HandleInputFiller : IClassFiller<HandleInputFillerData, Class> {
+    public const string AwakeMethodSignature = $"private void HandleInputAwake{GeneratorHelper.GenerationPostfix}()";
+    public const string OnEnableMethodSignature = $"private void HandleInputOnEnable{GeneratorHelper.GenerationPostfix}()";
+    public const string OnDisableMethodSignature = $"private void HandleInputOnDisable{GeneratorHelper.GenerationPostfix}()";
+
     
     public Class Fill(Class c, HandleInputFillerData data) {
-        var inputAsset = data.InputAsset;
-        
-        var awakeMethod = c.GetOrCreateMethod(GeneratorHelper.AwakeMethodSignature);
-        var onEnableMethod = c.GetOrCreateMethod(GeneratorHelper.OnEnableMethodSignature);
-        var onDisableMethod = c.GetOrCreateMethod(GeneratorHelper.OnDisableMethodSignature);
-        
-        var awakeReservation = awakeMethod.GetOrCreateReservation(ReservationsID);
-        var onEnableReservation = onEnableMethod.GetOrCreateReservation(ReservationsID);
-        var onDisableReservation = onDisableMethod.GetOrCreateReservation(ReservationsID);
-        
         c.AddUsings("""
                     UnityExtended.Core.Types
                     UnityEngine.InputSystem
                     """);
 
-        c.GetOrCreateMethod(GeneratorHelper.Awake2MethodSignature);
-        c.GetOrCreateMethod(GeneratorHelper.OnEnable2MethodSignature);
-        c.GetOrCreateMethod(GeneratorHelper.OnDisable2MethodSignature);
+        var awake = c.GetOrCreateMethod(AwakeMethodSignature);
+        var onEnable = c.GetOrCreateMethod(OnEnableMethodSignature);
+        var onDisable = c.GetOrCreateMethod(OnDisableMethodSignature);
+
+        var inputAsset = data.InputAsset;
         
-        awakeReservation.AddStatement($"{inputAsset.ConcreteInputAssetName} = InputSingletonsManager.GetInstance<{inputAsset.FullyQualifiedInputAssetName}>();");
+        awake.AddStatement($"{inputAsset.ConcreteInputAssetName} = InputSingletonsManager.GetInstance<{inputAsset.FullyQualifiedInputAssetName}>();");
 
         c.AddField($"private {inputAsset.FullyQualifiedInputAssetName} {inputAsset.ConcreteInputAssetName};");
-
+        
         foreach (var actionMap in inputAsset.ActionMaps) {
             c.AddField($"private {actionMap.FullyQualifiedActionMapName} {actionMap.ConcreteActionMapName};");
 
-            awakeReservation.AddStatement($"{actionMap.ConcreteActionMapName} = {inputAsset.ConcreteInputAssetName}.{actionMap.ConcreteActionMapName.Replace("Actions", "")};");
+            awake.AddStatement($"{actionMap.ConcreteActionMapName} = {inputAsset.ConcreteInputAssetName}.{actionMap.ConcreteActionMapName.Replace("Actions", "")};");
 
             foreach (var action in actionMap.Actions) {
                 foreach (var actionEvent in action.Events) {
@@ -44,8 +39,8 @@ public class HandleInputFiller : IClassFiller<HandleInputFillerData> {
                     
                     string additionStatement =
                         $"{actionMap.ConcreteActionMapName}.{action.Name}.{actionEvent.EventName} += {actionEvent.MethodName};";
-                    onEnableReservation.AddStatement(additionStatement);
-                    onDisableReservation.AddStatement(additionStatement.Replace("+", "-"));
+                    onEnable.AddStatement(additionStatement);
+                    onDisable.AddStatement(additionStatement.Replace("+", "-"));
                 }
             }
         }

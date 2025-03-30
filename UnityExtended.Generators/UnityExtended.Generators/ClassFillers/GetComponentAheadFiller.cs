@@ -4,7 +4,7 @@ using UnityExtended.Generators.Hierarchy;
 
 namespace UnityExtended.Generators.ClassFillers;
 
-public class GetComponentAheadFiller : IClassFiller<GetComponentAheadFillerData> {
+public class GetComponentAheadFiller : IClassFiller<GetComponentAheadFillerData, Class> {
     private const string OnValidateReservationID = "GetComponentAheadRes";
     private const string PreSignatureName = "PreGetComponentAhead";
     private const string PostSignatureName = "PostGetComponentAhead";

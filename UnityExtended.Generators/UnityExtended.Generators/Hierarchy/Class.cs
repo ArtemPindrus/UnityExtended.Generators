@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -10,7 +11,7 @@ namespace UnityExtended.Generators.Hierarchy;
 public class Class : HierarchyMember {
     public const string FinishReservationID = "FinishRes";
     
-    private static Dictionary<string, Class> FQNameToClass = new();
+    protected static Dictionary<string, Class> FQNameToClass = new();
     
     public readonly HashSet<string> Constraints = [];
     public readonly HashSet<string> Usings = [];
@@ -32,11 +33,15 @@ public class Class : HierarchyMember {
     public string? NamespaceName { get; }
     public string Name { get; }
 
-    protected Class(string fullyQualifiedName) {
+    public Class(string fullyQualifiedName) {
         FullyQualifiedName = fullyQualifiedName;
         (NamespaceName, Name) = FullyQualifiedName.SeparateFromFullyQualifiedName();
         
         Methods = new ReadOnlyDictionary<string, Method>(methods);
+    }
+    
+    public static void ClearStaticState() {
+        FQNameToClass.Clear();
     }
 
     /// <summary>
@@ -62,10 +67,6 @@ public class Class : HierarchyMember {
         return c;
     }
 
-    public static void ClearStaticState() {
-        FQNameToClass.Clear();
-    }
-
     protected static bool GetCachedClass(string fullyQualifiedName, out Class c) {
         if (FQNameToClass.TryGetValue(fullyQualifiedName, out c)) return true;
 
@@ -78,28 +79,28 @@ public class Class : HierarchyMember {
     }
 
     public virtual Class Finish() {
-        if (methods.TryGetValue(GeneratorHelper.AwakeMethodSignature, out var awakeMethod)) {
-            if (!awakeMethod.GetOrCreateReservation(FinishReservationID, out var awakeRes)) {
-                awakeRes.AddStatement("Awake2();");
-            } 
-        }
-        if (methods.TryGetValue(GeneratorHelper.OnValidateMethodSignature, out var validateMethod)) {
-            if (!validateMethod.GetOrCreateReservation(FinishReservationID, out var validateRes)) {
-                validateRes.AddStatement("OnValidate2();");
-            } 
-        }
-        if (methods.TryGetValue(GeneratorHelper.OnEnableMethodSignature, out var enableMethod)) {
-            if (!enableMethod.GetOrCreateReservation(FinishReservationID, out var enableRes)) {
-                enableRes.AddStatement("OnEnable2();");
-            } 
-        }
-        if (methods.TryGetValue(GeneratorHelper.OnDisableMethodSignature, out var disableMethod)) {
-            if (!disableMethod.GetOrCreateReservation(FinishReservationID, out var disableRes)) {
-                disableRes.AddStatement("OnDisable2();");
-            } 
-        }
+        AddFor(GeneratorHelper.AwakeMethodSignature, GeneratorHelper.Awake2MethodSignature);
+        AddFor(GeneratorHelper.OnValidateMethodSignature, GeneratorHelper.OnValidate2MethodSignature);
+        AddFor(GeneratorHelper.OnEnableMethodSignature, GeneratorHelper.OnEnable2MethodSignature);
+        AddFor(GeneratorHelper.OnDisableMethodSignature, GeneratorHelper.OnDisable2MethodSignature);
+        AddFor(GeneratorHelper.UpdateSignature, GeneratorHelper.Update2Signature);
+        AddFor(GeneratorHelper.StartMethodSignature, GeneratorHelper.Start2MethodSignature);
 
         return this;
+
+        void AddFor(string existingSignature, string calledMethodSignature) {
+            if (methods.TryGetValue(existingSignature, out var m)) {
+                GetOrCreateMethod(calledMethodSignature); // ensure called is created;
+
+                int lastSpaceInd = calledMethodSignature.LastIndexOf(' ');
+                string callStatement = $"{calledMethodSignature.Substring(lastSpaceInd)};";
+
+                if (!m.GetOrCreateReservation(FinishReservationID, out var res)) {
+                    res.AddStatement(callStatement);
+                }
+                else throw new Exception("Source Generator reserved Reserve ID was taken!");
+            }
+        }
     }
 
     public void AddConstraint(string constraint) {
@@ -154,16 +155,19 @@ public class Class : HierarchyMember {
         
         return this;
     }
+
+    public void AddUsing(string usingDirective) {
+        if (!usingDirective.StartsWith("using ")) usingDirective = $"using {usingDirective}";
+        if (!usingDirective.EndsWith(";")) usingDirective += ";";
+
+        Usings.Add(usingDirective);
+    }
     
     public void AddUsings(string usings) {
-        string[] usingsSeparated = usings.Split('\n');
-        
-        AddUsings(usingsSeparated);
-    }
+        var usingsSeparated = usings.Split('\n').Select(x => x.Trim());
 
-    public void AddUsings(params string[] usings) {
-        foreach (var u in usings) {
-            Usings.Add(u.Trim());
+        foreach (var usingStatement in usingsSeparated) {
+            AddUsing(usingStatement);
         }
     }
 
@@ -175,7 +179,7 @@ public class Class : HierarchyMember {
         
         // write usings
         foreach (var usingStatement in Usings) {
-            stringBuilder.AppendLine($"using {usingStatement};");
+            stringBuilder.AppendLine(usingStatement);
         }
 
         if (Usings.Any()) stringBuilder.AppendLine();
@@ -211,7 +215,7 @@ public class Class : HierarchyMember {
 
         //// methods
         var orderedMethods = methods.Values
-            .OrderBy(x => x.Signature.StartsWith("partial") ? 1 : 0)
+            .OrderBy(x => x.Signature.StartsWith("partial") && x.MainReservation.Statements.Count == 0 ? 1 : 0)
             .ToArray();
         
         for (var i = 0; i < orderedMethods.Length; i++) {

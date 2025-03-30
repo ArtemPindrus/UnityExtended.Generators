@@ -1,8 +1,11 @@
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using UnityExtended.Generator;
 using UnityExtended.Generators.Extensions;
+using UnityExtended.Generators.FillerData.Helpers;
 
 namespace UnityExtended.Generators.FillerData;
 
@@ -82,5 +85,21 @@ public static class FillerDataFactory {
         }
 
         return new HandleInputFillerData(classSymbol.ToDisplayString(), inputAsset);
+    }
+
+    public static CollectFillerData CollectFillerDataFromContext(
+        GeneratorAttributeSyntaxContext context,
+        CancellationToken token) {
+        INamedTypeSymbol classSymbol = (INamedTypeSymbol)context.TargetSymbol;
+
+        return new CollectFillerData(classSymbol.ToDisplayString());
+    }
+
+    public static CreateCustomInspectorFillerData? CreateCustomInspectorFillerDataFromContext(
+        GeneratorAttributeSyntaxContext context,
+        CancellationToken token) {
+        if (context.TargetSymbol is not INamedTypeSymbol classSymbol) return null;
+
+        return new CreateCustomInspectorFillerData(classSymbol.ToDisplayString());
     }
 }

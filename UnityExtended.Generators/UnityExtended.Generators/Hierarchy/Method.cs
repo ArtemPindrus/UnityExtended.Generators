@@ -55,6 +55,12 @@ public class Method : HierarchyMember {
         return this;
     }
 
+    public Method AddStatement(string statement) {
+        MainReservation.AddStatement(statement);
+
+        return this;
+    }
+
     public Method AddStatements(string newStatements) {
         MainReservation.AddStatements(newStatements);
 
@@ -82,7 +88,7 @@ public class Method : HierarchyMember {
             sb.AppendLine(attribute);
         }
 
-        if (Signature.Contains("partial ")) {
+        if (Signature.Contains("partial ") && MainReservation.Statements.Count == 0 && reservationsByID == null) {
             sb.AppendLine($"{Signature};");
         } else {
             sb.AppendLine($"{Signature} {{");
@@ -90,13 +96,17 @@ public class Method : HierarchyMember {
             sb.IncrementIndent();
             MainReservation.AppendTo(sb);
 
-            if (reservationsByID != null) sb.AppendLine();
+            if (reservationsByID != null) {
+                sb.AppendLine();
+                
+                var stats = ReservationsByID.Values.ToArray();
+                int length = stats.Length;
+                
+                for (int i = 0; i < length; i++) {
+                    stats[i].AppendTo(sb);
 
-            var lastRes = ReservationsByID.Values.Last();
-            foreach (var reservation in reservationsByID.Values) {
-                reservation.AppendTo(sb);
-
-                if (reservation != lastRes) sb.AppendLine();
+                    if (i != length - 1) sb.AppendLine();
+                }
             }
 
             sb.DecrementIndent().AppendLine("}");

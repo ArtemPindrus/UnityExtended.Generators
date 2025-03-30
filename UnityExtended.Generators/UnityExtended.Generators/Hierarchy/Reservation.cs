@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 namespace UnityExtended.Generators.Hierarchy;
 
 public class Reservation : HierarchyMember {
-    public IEnumerable<string> Statements => statements;
+    public IReadOnlyCollection<string> Statements => statements;
     public string ID { get; }
     
     private List<string> statements = new();
@@ -35,7 +35,7 @@ public class Reservation : HierarchyMember {
         string[] split = newStatements.Split('\n');
 
         foreach (var st in split) {
-            statements.Add(st.Trim());
+            statements.Add(st.TrimEnd());
         }
 
         return this;

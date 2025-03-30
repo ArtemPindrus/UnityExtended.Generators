@@ -18,7 +18,7 @@ namespace UnityEngine {
         public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType type) {}
     }
     
-    public class MonoBehavior {
+    public class MonoBehaviour {
         protected T GetComponent<T>() => throw new NotSupportedException();
         protected T GetComponents<T>() => throw new NotSupportedException();
         
@@ -29,7 +29,7 @@ namespace UnityEngine {
         protected T GetComponentsInChildren<T>() => throw new NotSupportedException();
     }
     
-    public class Rigidbody : MonoBehavior {}
+    public class Rigidbody : MonoBehaviour {}
     
     public class Image {}
     

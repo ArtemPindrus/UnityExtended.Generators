@@ -1,11 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityExtended.Generators.Hierarchy;
 
 namespace UnityExtended.Generators;
 
-public readonly struct EquatableList<T> : IEquatable<EquatableList<T>>, IEnumerable<T>, IList<T> {
+public readonly struct EquatableList<T> : IEquatable<EquatableList<T>>, IList<T>, IReadOnlyList<T> {
     private readonly List<T> baseList;
 
     public T this[int i] {
@@ -23,6 +24,10 @@ public readonly struct EquatableList<T> : IEquatable<EquatableList<T>>, IEnumera
 
     public EquatableList(T[] baseArray) {
         baseList = new(baseArray);
+    }
+    
+    public EquatableList(List<T> baseList) {
+        this.baseList = new(baseList);
     }
 
     public static bool operator ==(EquatableList<T> l, EquatableList<T> r) => l.Equals(r);
@@ -68,4 +73,16 @@ public readonly struct EquatableList<T> : IEquatable<EquatableList<T>>, IEnumera
     public void CopyTo(T[] array, int arrayIndex) => baseList.CopyTo(array, arrayIndex);
 
     public bool Remove(T item) => baseList.Remove(item);
+}
+
+public static class EquatableListExtensions {
+    public static EquatableList<T> ToEquatableList<T>(this IEnumerable<T> enumerable) {
+        var equatableList = new EquatableList<T>();
+        
+        foreach (var i in enumerable) {
+            equatableList.Add(i);
+        }
+
+        return equatableList;
+    }
 }

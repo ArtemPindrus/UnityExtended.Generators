@@ -3,6 +3,8 @@ using UnityExtended.Generators.Hierarchy;
 
 namespace UnityExtended.Generators.ClassFillers;
 
-public interface IClassFiller<T> where T : IFillerData {
-    public Class Fill(Class c, T data);
+public interface IClassFiller<TData, TClass> 
+    where TData : IFillerData 
+    where TClass : Class {
+    public TClass Fill(TClass c, TData data);
 }

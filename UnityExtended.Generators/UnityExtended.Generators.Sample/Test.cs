@@ -1,25 +1,24 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityExtended.Generators.Attributes;
+using UnityExtended.Core.Generators.Attributes;
 
 namespace UnityExtended.Generators.Sample;
 
+[GeneratorHook]
 [HandleInput(typeof(MyInput))]
-public partial class Test : MonoBehavior {
-    [GetComponentAhead] private float t;
-    [GetComponent] private MonoBehavior s;
-    [GetComponent] private object o;
-    [GetComponentAhead] private MonoBehavior te;
+public partial class Test4 : MonoBehaviour {
+    public float z;
+}
 
-    partial void OnAttackPerformed(InputAction.CallbackContext callbackContext) {
-        // do shit!
-    }
+[GeneratorHook]
+[Collect]
+public partial class Here : MonoBehaviour {
+    [GetComponent] public float y;
 
-    partial void OnAttackStarted(InputAction.CallbackContext callbackContext) {
-        throw new System.NotImplementedException();
-    }
+    [GetComponent] public object obj;
+}
 
-    partial void OnAttackCanceled(InputAction.CallbackContext callbackContext) {
-        throw new System.NotImplementedException();
-    }
+[GeneratorHook(callBase: true)]
+public partial class There : Here {
+    [GetComponent] private object shit;
 }

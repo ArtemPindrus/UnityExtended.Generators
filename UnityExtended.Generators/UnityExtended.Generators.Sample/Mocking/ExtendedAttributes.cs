@@ -1,10 +1,14 @@
 using System;
 
-namespace UnityExtended.Generators.Attributes {
+namespace UnityExtended.Core.Generators.Attributes {
     public enum In {
         Self,
         Children,
         Parent,
+    }
+
+    public class MonoBehaviourAttribute : Attribute {
+        
     }
 
     [AttributeUsage(AttributeTargets.Field)]
@@ -13,17 +17,17 @@ namespace UnityExtended.Generators.Attributes {
     }
     
     [AttributeUsage(AttributeTargets.Field)]
-    public class GetComponentAttribute : Attribute {
+    public class GetComponentAttribute : MonoBehaviourAttribute {
         public GetComponentAttribute(In @in = In.Self, bool plural = false){}
     }
     
     [AttributeUsage(AttributeTargets.Field)]
-    public class GetComponentAheadAttribute : Attribute {
+    public class GetComponentAheadAttribute : MonoBehaviourAttribute {
         public GetComponentAheadAttribute(In @in = In.Self, bool plural = false){}
     }
 
     [AttributeUsage(AttributeTargets.Class)]
-    public class HandleInputAttribute : Attribute {
+    public class HandleInputAttribute : MonoBehaviourAttribute {
         public HandleInputAttribute(Type inputAssetType) {
         }
     }
@@ -33,12 +37,21 @@ namespace UnityExtended.Generators.Attributes {
     }
     
     [AttributeUsage(AttributeTargets.Class)]
-    public class CollectAttribute : Attribute {
+    public class CollectAttribute : MonoBehaviourAttribute {
     }
 
     [AttributeUsage(AttributeTargets.Field)]
     public class StartFoldoutGroupAttribute : Attribute {
         public StartFoldoutGroupAttribute(string groupName, int propertyOrder = -1){}
+    }
+
+    [AttributeUsage(AttributeTargets.Class)]
+    public class GeneratorHookAttribute(bool callBase = false) : Attribute {
+    }
+    
+    [AttributeUsage(AttributeTargets.Class)]
+    public class CreateCustomInspectorAttribute : Attribute {
+        
     }
     
     [AttributeUsage(AttributeTargets.Field)]
@@ -46,7 +59,7 @@ namespace UnityExtended.Generators.Attributes {
         
     }
     
-    [AttributeUsage(AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class DisplayAttribute : Attribute{}
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
