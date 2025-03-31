@@ -28,43 +28,49 @@ Most generators are unobtrusive. Their functions get tightly integrated by HookG
 ## [GetComponentAttribute](https://github.com/ArtemPindrus/UnityExtended.Core/blob/main/Generators/Attributes/GetComponentAttribute.cs)
 Code:
 ```csharp
-namespace MyNamespace {
-    public partial class MyClass : MonoBehavior {
-        [GetComponent(In.Children, true)]
-        private Rigidbody rb;
+[GeneratorHook]
+public partial class Test : MonoBehaviour {
+    [GetComponent]
+    private Rigidbody rb;
 
-        [GetComponent(In.Parent)]
-        private Image image;
-        
-        [GetComponent]
-        private float s;
-    }
+    [GetComponent] 
+    private Image image;
+
+    [GetComponent] 
+    private SomeOtherShit someOtherShit;
 }
 ```
 
 Generation:
 ```csharp
-namespace MyNamespace {
-    partial class MyClass {
-        private void Awake() {
-            // Reservation GetComponentRes
-            PreGetComponent();
-            s = GetComponent<float>();
-            image = GetComponentInParent<UnityEngine.Image>();
-            rb = GetComponentsInChildren<UnityEngine.Rigidbody>();
-            PostGetComponent();
-
-            // Reservation FinishRes
-            Awake2();
-        }
-
-        partial void Awake2();
-
-        partial void PreGetComponent();
-
-        partial void PostGetComponent();
+partial class Test {
+    private void GetComponent_Generated() {
+        // Reservation Main
+        rb = GetComponent<UnityEngine.Rigidbody>();
+        image = GetComponent<UnityEngine.UI.Image>();
+        someOtherShit = GetComponent<SomeOtherShit>();
     }
 }
+```
+
+Hook:
+```cs
+partial class Test {
+    protected void Awake() {
+        // Reservation Main
+        PreGetComponent();
+        GetComponent_Generated();
+        PostGetComponent();
+        Awake2();
+    }
+
+    partial void PreGetComponent();
+
+    partial void PostGetComponent();
+
+    partial void Awake2();
+}
+
 ```
 
 ## [GetComponentAheadAttribute](https://github.com/ArtemPindrus/UnityExtended.Core/blob/main/Generators/Attributes/GetComponentAheadAttribute.cs)
