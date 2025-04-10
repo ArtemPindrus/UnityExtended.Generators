@@ -26,7 +26,7 @@ namespace UnityExtended.Core.Generators.Attributes {
         public GetComponentAheadAttribute(In @in = In.Self, bool plural = false){}
     }
 
-    [AttributeUsage(AttributeTargets.Class)]
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public class HandleInputAttribute : MonoBehaviourAttribute {
         public HandleInputAttribute(Type inputAssetType) {
         }
