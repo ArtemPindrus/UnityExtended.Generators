@@ -103,16 +103,22 @@ public class Class : HierarchyMember {
         }
     }
 
-    public void AddConstraint(string constraint) {
+    public Class AddConstraint(string constraint) {
         Constraints.Add(constraint);
+
+        return this;
     }
 
-    public void AddImplementation(string implementation) {
+    public Class AddImplementation(string implementation) {
         implementations.Add(implementation);
+
+        return this;
     }
     
-    public void AddAttribute(string attribute) {
+    public Class AddAttribute(string attribute) {
         attributes.Add(attribute);
+
+        return this;
     }
 
     public bool GetOrCreateMethod(string signature, out Method m) {
