@@ -33,14 +33,6 @@ public static class FillerDataFactory {
         return data;
     }
 
-    public static CollectFillerData CollectFillerDataFromContext(
-        GeneratorAttributeSyntaxContext context,
-        CancellationToken token) {
-        INamedTypeSymbol classSymbol = (INamedTypeSymbol)context.TargetSymbol;
-
-        return new CollectFillerData(classSymbol.ToDisplayString());
-    }
-
     public static CreateCustomInspectorFillerData? CreateCustomInspectorFillerDataFromContext(
         GeneratorAttributeSyntaxContext context,
         CancellationToken token) {

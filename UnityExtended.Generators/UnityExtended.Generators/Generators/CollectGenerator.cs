@@ -1,3 +1,4 @@
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using UnityExtended.Generators.ClassFillers;
 using UnityExtended.Generators.FillerData;
@@ -6,25 +7,33 @@ using UnityExtended.Generators.Hierarchy;
 
 namespace UnityExtended.Generators.Generators;
 
-[Generator]
-public class CollectGenerator : IIncrementalGenerator {
-    private static readonly CollectFiller filler = new();
-    
-    public void Initialize(IncrementalGeneratorInitializationContext context) {
-        var provider = context.SyntaxProvider.ForAttributeWithMetadataName(AttributesHelper.CollectAttribute,
-            predicate: GeneratorHelper.TruePredicate,
-            transform: FillerDataFactory.CollectFillerDataFromContext);
-        
-        context.RegisterSourceOutput(provider, Action);
-    }
+public class CollectGenerator : FunctionalGenerator<CollectFillerData> {
+    private static readonly CollectFiller Filler = new();
 
-    private static void Action(SourceProductionContext context, CollectFillerData data) {
+
+    protected override IncrementalValuesProvider<CollectFillerData> CreatePipeline(IncrementalGeneratorInitializationContext context) {
+        var collectProvider = context.SyntaxProvider.ForAttributeWithMetadataName(AttributesHelper.CollectAttribute,
+            predicate: GeneratorHelper.TruePredicate,
+            transform: CollectFillerDataFromContext);
+
+        return collectProvider;
+    }
+    
+    protected override void Action(SourceProductionContext context, CollectFillerData data) {
         LoggingHelper.Log($"Generating for {data.FullyQualifiedGeneratedClassName}.", "collect");
         
         Class c = new(data.FullyQualifiedGeneratedClassName);
 
-        ClassFillerUtility.Fill(c, filler, data);
+        Filler.Fill(c, data);
         
         context.AddSource(c, "Collect");
+    }
+    
+    private static CollectFillerData CollectFillerDataFromContext(
+        GeneratorAttributeSyntaxContext context,
+        CancellationToken token) {
+        INamedTypeSymbol classSymbol = (INamedTypeSymbol)context.TargetSymbol;
+
+        return new CollectFillerData(classSymbol.ToDisplayString());
     }
 }

@@ -23,12 +23,8 @@ public class UnityGenerator : IIncrementalGenerator {
         HandleInputGenerator handleInputGenerator = new();
         var handleInputProvider = handleInputGenerator.Initialize(context);
         
-        // collect
-        var collectProvider = context.SyntaxProvider.ForAttributeWithMetadataName(AttributesHelper.CollectAttribute,
-            predicate: GeneratorHelper.TruePredicate,
-            transform: FillerDataFactory.CollectFillerDataFromContext);
-        
-        context.RegisterSourceOutput(collectProvider, CollectGenerator.Action);
+        CollectGenerator collectGenerator = new CollectGenerator();
+        var collectProvider = collectGenerator.Initialize(context);
         
         // MonoBehaviourHook
         var combined = getComponentProvider
