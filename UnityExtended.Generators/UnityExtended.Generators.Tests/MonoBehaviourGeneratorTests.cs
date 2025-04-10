@@ -5,6 +5,6 @@ using Xunit;
 
 namespace UnityExtended.Generators.Tests;
 
-public class UnityGeneratorTests {
+public class MonoBehaviourGeneratorTests {
     
 }

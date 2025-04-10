@@ -1,19 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using UnityExtended.Generators.ClassFillers;
-using UnityExtended.Generators.FillerData;
-using UnityExtended.Generators.Helpers;
-using UnityExtended.Generators.Hierarchy;
 
 namespace UnityExtended.Generators.Generators;
 
 [Generator]
-public class UnityGenerator : IIncrementalGenerator {
+public class MonoBehaviourGenerator : IIncrementalGenerator {
     public void Initialize(IncrementalGeneratorInitializationContext context) {
         // TODO: ordering regeneration problem on all providers
         
