@@ -19,15 +19,9 @@ public class UnityGenerator : IIncrementalGenerator {
         
         GetComponentGenerator getComponentGenerator = new();
         var getComponentProvider = getComponentGenerator.Initialize(context);
-        
-        var handleInputProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
-                AttributesHelper.HandleInputAttribute,
-                predicate: GeneratorHelper.TruePredicate,
-                transform: FillerDataFactory.HandleInputFillerDataFromContext)
-            .Where(x => x.HasValue)
-            .Select((x, _) => x!.Value);
-        
-        context.RegisterSourceOutput(handleInputProvider, HandleInputGenerator.Action);
+
+        HandleInputGenerator handleInputGenerator = new();
+        var handleInputProvider = handleInputGenerator.Initialize(context);
         
         // collect
         var collectProvider = context.SyntaxProvider.ForAttributeWithMetadataName(AttributesHelper.CollectAttribute,
